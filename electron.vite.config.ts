@@ -25,6 +25,11 @@ export default defineConfig({
     resolve: { alias },
     plugins: [react(), tailwindcss()],
     build: {
+      // Smaller bundle = faster start on low-end shop PCs.
+      minify: 'esbuild',
+      cssMinify: true,
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 700,
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/index.html'),

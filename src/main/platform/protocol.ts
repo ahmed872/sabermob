@@ -52,7 +52,13 @@ export function registerSchemePrivileges(): void {
 }
 
 function safeJoin(root: string, urlPath: string): string | null {
-  const decoded = decodeURIComponent(urlPath).replace(/^\/+/, '')
+  let decoded: string
+  try {
+    decoded = decodeURIComponent(urlPath).replace(/^\/+/, '')
+  } catch {
+    return null
+  }
+  if (decoded.includes('\0')) return null
   const full = normalize(join(root, decoded))
   const rootResolved = resolve(root) + sep
   return full.startsWith(rootResolved) ? full : null

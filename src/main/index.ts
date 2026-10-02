@@ -97,13 +97,6 @@ function createWindow(): BrowserWindow {
     win.show()
     if (process.env.CENTRAL_MAXIMIZE !== '0') win.maximize()
   })
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://')) void shell.openExternal(url)
-    return { action: 'deny' }
-  })
-  win.webContents.on('will-navigate', (event, url) => {
-    if (!isTrustedSender(url)) event.preventDefault()
-  })
   win.webContents.on('render-process-gone', (_e, details) => {
     ctx?.log.app.error('Renderer crashed', { reason: details.reason })
     if (!quitting && details.reason !== 'clean-exit') win.reload()
@@ -170,6 +163,19 @@ async function bootstrap(): Promise<void> {
   mainWindow = createWindow()
   startBackgroundJobs(ctx, emit)
 }
+
+// Every web contents (main and print windows): no pop-ups, no foreign
+// navigation, no <webview>.
+app.on('web-contents-created', (_e, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  contents.on('will-navigate', (event, url) => {
+    if (!isTrustedSender(url)) event.preventDefault()
+  })
+  contents.on('will-attach-webview', (event) => event.preventDefault())
+})
 
 app.whenReady().then(bootstrap)
 
