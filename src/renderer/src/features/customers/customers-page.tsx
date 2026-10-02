@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { UserPlus, Users } from 'lucide-react'
+import { FileSpreadsheet, UserPlus, Users } from 'lucide-react'
 import type { CustomerQueryInput } from '@shared/schemas/customers'
 import type { CustomerListItem } from '@shared/types/customers'
 import { useApi } from '../../lib/query'
@@ -13,6 +13,7 @@ import { SearchInput, Select } from '../../components/ui/input'
 import { Badge, Card, EmptyState, PageHeader } from '../../components/ui/misc'
 import { DataTable, Pagination, type Column } from '../../components/ui/table'
 import { CustomerFormDialog } from './customer-form'
+import { ImportDialog } from '../importer/import-dialog'
 
 export function BalanceText({ value }: { value: number }) {
   const { t } = useTranslation()
@@ -31,6 +32,7 @@ export default function CustomersPage() {
   const [q, setQ] = useState('')
   const [query, setQuery] = useState<CustomerQueryInput>({ page: 1, pageSize: 50, sort: 'recent' })
   const [creating, setCreating] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const setSearch = useMemo(() => debounce((v: string) => setQuery((x) => ({ ...x, q: v || undefined, page: 1 })), 200), [])
   const list = useApi('customers.list', query, { placeholderData: (p) => p })
   const columns: Column<CustomerListItem>[] = [
@@ -60,9 +62,14 @@ export default function CustomersPage() {
         subtitle={t('customers.subtitle')}
         actions={
           can('manage_customers') ? (
-            <Button onClick={() => setCreating(true)}>
-              <UserPlus /> {t('customers.newCustomer')}
-            </Button>
+            <>
+              <Button variant="ghost" onClick={() => setImportOpen(true)}>
+                <FileSpreadsheet /> {t('importer.button')}
+              </Button>
+              <Button onClick={() => setCreating(true)}>
+                <UserPlus /> {t('customers.newCustomer')}
+              </Button>
+            </>
           ) : null
         }
       />
@@ -116,6 +123,7 @@ export default function CustomersPage() {
           <Pagination page={query.page ?? 1} pageSize={50} total={list.data?.total ?? 0} onPage={(p) => setQuery({ ...query, page: p })} />
         </div>
       </Card>
+      {importOpen ? <ImportDialog entity="customers" onClose={() => setImportOpen(false)} /> : null}
       {creating ? <CustomerFormDialog value={{}} onClose={() => setCreating(false)} onSaved={(c) => navigate(`/customers/${c.id}`)} /> : null}
     </div>
   )

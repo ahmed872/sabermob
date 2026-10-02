@@ -17,6 +17,22 @@ export const data = {
       restoreUnderstand: 'I understand that current data will be replaced', restoreNow: 'Restore now', restoring: 'Restoring… the app will restart', newer: 'This backup was made by a newer version of Central Pro. Update the app first.',
       shop: 'Shop', createdAt: 'Made on', version: 'Version', contents: 'Contains', counts: '{{products}} products · {{customers}} customers · {{sales}} sales · {{repairs}} repairs',
       fromBackup: 'Restore from backup', fromBackupHint: 'Moving from another computer? Restore your shop from a backup or transfer file.'
+    },
+    importer: {
+      title: 'Import from Excel / CSV', products: 'Import products', customers: 'Import customers', button: 'Import',
+      steps: { file: 'File', columns: 'Columns', check: 'Check', done: 'Done' },
+      chooseFile: 'Choose a file', dropHint: 'Excel (.xlsx) or CSV. The first row must contain the column names.', template: 'Download a ready template',
+      rows: '{{count}} rows', column: 'Column in your file', notImported: '— not imported —', required: 'required', sample: 'First rows of your file',
+      fields: {
+        name: 'Name', sellPrice: 'Selling price', costPrice: 'Cost', stock: 'Quantity', barcode: 'Barcode', sku: 'SKU', category: 'Category', brand: 'Brand', minStock: 'Alert level', minPrice: 'Minimum price',
+        phone: 'Mobile', phone2: 'Second phone', address: 'Address', notes: 'Notes', balance: 'Balance (owes us)'
+      },
+      ready: '{{count}} rows ready to import', existing: '{{count}} already exist', problems: '{{count}} rows have problems and will be skipped',
+      existingMode: 'Rows that already exist', skip: 'Skip them', update: 'Update them', updateHintProducts: 'Updates prices only. Stock is never changed by an import.', updateHintCustomers: 'Updates contact details only. Balances are never changed.',
+      row: 'Row', field: 'Column', problem: 'Problem', value: 'Value',
+      codes: { REQUIRED: 'Missing', INVALID_NUMBER: 'Not a valid number', INVALID_BARCODE: 'Invalid barcode', DUPLICATE_IN_FILE: 'Repeated in the file', EXISTS: 'Already exists', ERROR: 'Could not be saved' },
+      run: 'Import {{count}} rows', running: 'Importing… you can keep selling meanwhile', next: 'Check data',
+      result: 'Import finished', created: 'Added', updated: 'Updated', skipped: 'Skipped', failed: 'Failed', failedReport: 'Download problems report', problemsTitle: 'Import problems'
     }
   },
   ar: {
@@ -37,6 +53,22 @@ export const data = {
       restoreUnderstand: 'فاهم إن البيانات الحالية هتتبدل', restoreNow: 'استرجاع الآن', restoring: 'جاري الاسترجاع… البرنامج هيعيد التشغيل', newer: 'النسخة دي معمولة بإصدار أحدث من سنترال برو. حدّث البرنامج الأول.',
       shop: 'المحل', createdAt: 'تاريخ النسخة', version: 'الإصدار', contents: 'المحتوى', counts: '{{products}} صنف · {{customers}} عميل · {{sales}} عملية بيع · {{repairs}} صيانة',
       fromBackup: 'استرجاع من نسخة احتياطية', fromBackupHint: 'جاي من جهاز تاني؟ استرجع محلك من نسخة احتياطية أو ملف نقل.'
+    },
+    importer: {
+      title: 'استيراد من Excel / CSV', products: 'استيراد الأصناف', customers: 'استيراد العملاء', button: 'استيراد',
+      steps: { file: 'الملف', columns: 'الأعمدة', check: 'المراجعة', done: 'تم' },
+      chooseFile: 'اختر ملف', dropHint: 'ملف Excel ‏(.xlsx) أو CSV. أول صف لازم يكون فيه أسماء الأعمدة.', template: 'تحميل نموذج جاهز',
+      rows: '{{count}} صف', column: 'العمود في ملفك', notImported: '— لا يتم استيراده —', required: 'مطلوب', sample: 'أول صفوف من ملفك',
+      fields: {
+        name: 'الاسم', sellPrice: 'سعر البيع', costPrice: 'التكلفة', stock: 'الكمية', barcode: 'الباركود', sku: 'كود الصنف', category: 'القسم', brand: 'الماركة', minStock: 'حد التنبيه', minPrice: 'أقل سعر',
+        phone: 'الموبايل', phone2: 'رقم تاني', address: 'العنوان', notes: 'ملاحظات', balance: 'الرصيد (عليه لنا)'
+      },
+      ready: '{{count}} صف جاهز للاستيراد', existing: '{{count}} موجود بالفعل', problems: '{{count}} صف فيه مشاكل وهيتم تخطيه',
+      existingMode: 'الصفوف الموجودة بالفعل', skip: 'تخطيها', update: 'تحديثها', updateHintProducts: 'بيحدّث الأسعار بس. المخزون عمره ما بيتغير من الاستيراد.', updateHintCustomers: 'بيحدّث بيانات التواصل بس. الأرصدة مش بتتغير.',
+      row: 'الصف', field: 'العمود', problem: 'المشكلة', value: 'القيمة',
+      codes: { REQUIRED: 'ناقص', INVALID_NUMBER: 'رقم غير صحيح', INVALID_BARCODE: 'باركود غير صحيح', DUPLICATE_IN_FILE: 'متكرر في الملف', EXISTS: 'موجود بالفعل', ERROR: 'تعذر الحفظ' },
+      run: 'استيراد {{count}} صف', running: 'جاري الاستيراد… تقدر تكمل بيع عادي', next: 'مراجعة البيانات',
+      result: 'تم الاستيراد', created: 'اتضاف', updated: 'اتحدث', skipped: 'اتخطى', failed: 'فشل', failedReport: 'تحميل تقرير المشاكل', problemsTitle: 'مشاكل الاستيراد'
     }
   }
 }

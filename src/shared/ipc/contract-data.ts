@@ -1,5 +1,6 @@
 /** Contract for backup/restore, workspace bundles and data import. */
 import type { BackupInspection, BackupRecordDto, BackupStatus, BackupVerification } from '../types/backup'
+import type { ImportEntity, ImportMapping, ImportParseResult, ImportPreview, ImportResult } from '../import'
 
 type Empty = Record<string, never> | undefined
 type Ok = { ok: true }
@@ -18,4 +19,9 @@ export interface DataContract {
   'backup.exportBundle': { in: Empty; out: { path: string | null } }
   'backup.chooseFolder': { in: { target: 'directory' | 'mirrorDirectory'; clear?: boolean }; out: { path: string | null } }
   'backup.openFolder': { in: Empty; out: Ok }
+
+  /** `data` is the file content as base64 (CSV or XLSX, max 15 MB). */
+  'import.parse': { in: { entity: ImportEntity; fileName: string; data: string }; out: ImportParseResult }
+  'import.preview': { in: { token: string; entity: ImportEntity; mapping: ImportMapping }; out: ImportPreview }
+  'import.commit': { in: { token: string; entity: ImportEntity; mapping: ImportMapping; mode: 'skip' | 'update' }; out: ImportResult }
 }

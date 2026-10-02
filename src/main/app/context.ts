@@ -25,6 +25,7 @@ import { SecretsService } from '../security/secrets'
 import { QrService } from '../services/qr-service'
 import { OfferService } from '../services/offer-service'
 import { ReportService } from '../services/report-service'
+import { ImportService } from '../services/import-service'
 import { BackupService, plainKeyProtector, type KeyProtector } from '../backup/backup-service'
 
 export interface AppContextOptions {
@@ -71,6 +72,7 @@ export class AppContext {
   offers!: OfferService
   reports!: ReportService
   backup!: BackupService
+  imports!: ImportService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -118,6 +120,7 @@ export class AppContext {
     this.reports = new ReportService(this.db, this.settings, this.catalog, this.customers, this.now)
     this.repairs = new RepairService(this.db, this.settings, this.audit, this.shifts, this.secrets, this.media, this.now)
 
+    this.imports = new ImportService(this.db, this.settings, this.catalog, this.customers, this.audit, this.gate)
     this.backup = new BackupService({
       db: this.db,
       paths: this.paths,

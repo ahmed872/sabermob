@@ -5,6 +5,7 @@ import { AppError } from '@shared/errors'
 import { empty, id } from '@shared/schemas/common'
 import type { AppContext } from '../../app/context'
 import type { ApiRouter } from '../router'
+import type { Actor } from '../../services/auth-service'
 
 const password = z.string().min(6).max(128)
 
@@ -19,6 +20,14 @@ async function requireRestoreAccess(app: AppContext): Promise<string | null> {
   if (app.auth.isLocked()) throw new AppError('SESSION_LOCKED')
   if (!actor.permissions.has('manage_backups')) throw new AppError('FORBIDDEN', undefined, { permission: 'manage_backups' })
   return actor.userId
+}
+
+const entity = z.enum(['products', 'customers'])
+const mapping = z.record(z.string().max(40), z.number().int().min(0).max(59).nullable())
+
+function requireImportPermission(actor: Actor, e: z.infer<typeof entity>): void {
+  const perm = e === 'products' ? 'manage_inventory' : 'manage_customers'
+  if (!actor.permissions.has(perm)) throw new AppError('FORBIDDEN', 'Permission denied', { permission: perm })
 }
 
 export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindow | null): void {
@@ -86,6 +95,20 @@ export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindo
     }
     await app.settings.update('backup', { [i.target]: path }, actor!.userId)
     return { path }
+  })
+
+  const importPerm = { permission: ['manage_inventory', 'manage_customers'] as ['manage_inventory', 'manage_customers'] }
+  r.handle('import.parse', { input: z.object({ entity, fileName: z.string().max(260), data: z.string().max(20_000_000) }), ...importPerm, skipGate: true }, (i, { app, actor }) => {
+    requireImportPermission(actor!, i.entity)
+    return app.imports.parse(i.fileName, Buffer.from(i.data, 'base64'), i.entity)
+  })
+  r.handle('import.preview', { input: z.object({ token: z.string().uuid(), entity, mapping }), ...importPerm }, (i, { app, actor }) => {
+    requireImportPermission(actor!, i.entity)
+    return app.imports.preview(i.token, i.entity, i.mapping)
+  })
+  r.handle('import.commit', { input: z.object({ token: z.string().uuid(), entity, mapping, mode: z.enum(['skip', 'update']) }), ...importPerm, skipGate: true }, (i, { app, actor }) => {
+    requireImportPermission(actor!, i.entity)
+    return app.imports.commit(i.token, i.entity, i.mapping, i.mode, actor!)
   })
 
   r.handle('backup.openFolder', { input: empty, ...opts, skipGate: true }, async (_i, { app }) => {
