@@ -12,6 +12,11 @@ export class Mutex {
     }
   }
 
+  /** Takes the lock for good (used right before the process restarts). */
+  async freeze(): Promise<void> {
+    await this.#acquire()
+  }
+
   get isLocked(): boolean {
     return this.#locked
   }

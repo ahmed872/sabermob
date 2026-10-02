@@ -69,6 +69,8 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
       await app.settings.load() // drop cached values from a rolled-back transaction
       throw err
     }
+    // Backups are encrypted from day one (owner password unless a separate one was chosen).
+    await app.backup.setPassword(input.backupPassword ?? input.owner.password, null)
     return { ok: true as const }
   })
 
@@ -146,6 +148,12 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
       throw new AppError('VALIDATION', 'Invalid settings', { issues: parsed.error.issues.slice(0, 5).map((i) => i.path.join('.')) })
     }
     if (group === 'general' && 'onboardingComplete' in parsed.data) delete (parsed.data as Record<string, unknown>).onboardingComplete
+    if (group === 'backup') {
+      if (!actor!.permissions.has('manage_backups')) throw new AppError('FORBIDDEN', 'Permission denied', { permission: 'manage_backups' })
+      // Folders are only chosen through the OS picker (backup.chooseFolder), never sent as raw paths.
+      delete (parsed.data as Record<string, unknown>).directory
+      delete (parsed.data as Record<string, unknown>).mirrorDirectory
+    }
     const before = app.settings.get(group)
     const next = await app.settings.update(group, parsed.data as never, actor!.userId)
     await app.audit.log({

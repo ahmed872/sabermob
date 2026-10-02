@@ -9,5 +9,6 @@ import { business } from './business'
 import { print } from './print'
 import { offers } from './offers'
 import { reports } from './reports'
+import { data } from './data'
 
-export const modules = [common, errors, auth, permissions, inventory, admin, pos, business, print, offers, reports]
+export const modules = [common, errors, auth, permissions, inventory, admin, pos, business, print, offers, reports, data]

@@ -4,7 +4,8 @@ import type { AppContext } from './context'
 type Emit = <E extends ApiEventName>(event: E, payload: ApiEvents[E]) => void
 
 const timers: NodeJS.Timeout[] = []
-export type BackgroundJob = { name: string; everyMs: number; run: (ctx: AppContext, emit: Emit) => Promise<void> }
+/** `gated: false` jobs take the database gate themselves (long-running work). */
+export type BackgroundJob = { name: string; everyMs: number; gated?: boolean; run: (ctx: AppContext, emit: Emit) => Promise<void> }
 
 /** Jobs registered by modules (auto-backup, affinity refresh, ...). */
 export const backgroundJobs: BackgroundJob[] = [
@@ -24,6 +25,14 @@ export const backgroundJobs: BackgroundJob[] = [
       const state = ctx.license.state()
       if (state.operational !== before) emit('license:changed', state)
     }
+  },
+  {
+    name: 'auto-backup',
+    everyMs: 10 * 60_000,
+    gated: false,
+    run: async (ctx) => {
+      await ctx.backup.runAutoIfDue()
+    }
   }
 ]
 
@@ -34,7 +43,7 @@ export function startBackgroundJobs(ctx: AppContext, emit: Emit): void {
       if (running) return
       running = true
       try {
-        await ctx.gate.run(() => job.run(ctx, emit))
+        await (job.gated === false ? job.run(ctx, emit) : ctx.gate.run(() => job.run(ctx, emit)))
       } catch (err) {
         ctx.log.app.error('Background job failed', { job: job.name, message: String(err) })
       } finally {

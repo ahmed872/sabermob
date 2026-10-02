@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, BadgeCheck, Clock, Copy, KeyRound, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, BadgeCheck, Clock, Copy, DatabaseBackup, KeyRound, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { call, ApiError } from '../../lib/api'
-import { errorMessage } from '../../lib/query'
+import { errorMessage, useApiMutation } from '../../lib/query'
 import { fmtDate } from '../../lib/format'
 import { useApp, useCan } from '../../stores/app'
 import { Button } from '../../components/ui/button'
@@ -129,12 +129,19 @@ export function LicensePanel({ compact }: { compact?: boolean }) {
 export function ActivationScreen() {
   const { t } = useTranslation()
   const license = useApp((s) => s.license)
+  const can = useCan()
+  const backup = useApiMutation('backup.create', { success: 'backup.created' })
   return (
     <div className="flex h-full items-center justify-center overflow-y-auto p-6">
       <Card className="w-full max-w-xl p-6">
         <h1 className="mb-1 text-2xl font-extrabold">{license?.status === 'EXPIRED' ? t('license.expired') : t('license.trialEnded')}</h1>
         <p className="mb-5 text-sm text-muted">{t('license.dataSafe')}</p>
         <LicensePanel />
+        {can('manage_backups') ? (
+          <Button className="mt-4" variant="outline" loading={backup.isPending} onClick={() => backup.mutate(undefined)}>
+            <DatabaseBackup /> {t('backup.now')}
+          </Button>
+        ) : null}
       </Card>
     </div>
   )

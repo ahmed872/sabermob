@@ -7,6 +7,7 @@ import { MigrationError } from './database/migrator'
 import { ApiRouter } from './ipc/router'
 import { registerAllHandlers } from './ipc/register'
 import { OsLicensePlatform } from './platform/license-platform'
+import { osKeyProtector } from './platform/key-protector'
 import { APP_SCHEME, handleAppProtocol, registerSchemePrivileges } from './platform/protocol'
 import { startBackgroundJobs, stopBackgroundJobs } from './app/background'
 
@@ -119,7 +120,9 @@ async function bootstrap(): Promise<void> {
       migrationsDir: MIGRATIONS_DIR,
       deviceName: hostname(),
       platformName: `${process.platform}-${process.arch}`,
-      licensePlatform: new OsLicensePlatform(DATA_DIR)
+      licensePlatform: new OsLicensePlatform(DATA_DIR),
+      appVersion: app.getVersion(),
+      keyProtector: osKeyProtector()
     })
   } catch (err) {
     console.error('Startup failed:', err)
@@ -182,8 +185,11 @@ app.on('before-quit', (event) => {
   void (async () => {
     try {
       stopBackgroundJobs()
-      await c.gate.run(() => c.onShutdown())
-      await c.dispose()
+      // After a restore the database was swapped out from under this process.
+      if (!c.backup.restoring) {
+        await c.onShutdown()
+        await c.dispose()
+      }
     } catch (err) {
       c.log.app.error('Shutdown error', { message: String(err) })
     } finally {

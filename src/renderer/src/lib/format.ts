@@ -61,3 +61,9 @@ export function dayRange(date = new Date()): { from: string; to: string } {
   const to = new Date(from.getTime() + 86_400_000)
   return { from: from.toISOString(), to: to.toISOString() }
 }
+
+export function fmtBytes(n: number): string {
+  if (n < 1024) return `${fmtNumber(n)} B`
+  if (n < 1024 * 1024) return `${fmtNumber(Math.round(n / 1024))} KB`
+  return `${new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 1 }).format(n / 1024 / 1024)} MB`
+}

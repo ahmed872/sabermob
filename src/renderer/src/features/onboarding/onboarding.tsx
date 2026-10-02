@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, ArrowRight, Check, Globe2, PartyPopper, Printer, Store, UserRound, Coins, PackageOpen } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Globe2, History, PartyPopper, Printer, Store, UserRound, Coins, PackageOpen } from 'lucide-react'
 import { CURRENCY_DECIMALS } from '@shared/money'
 import { applyLanguage } from '../../i18n'
 import { call } from '../../lib/api'
@@ -11,6 +11,8 @@ import { Button } from '../../components/ui/button'
 import { Field, Input, Select } from '../../components/ui/input'
 import { Checkbox, Segmented, SwitchRow } from '../../components/ui/misc'
 import { BrandMark } from '../../layouts/brand'
+import type { BackupInspection } from '@shared/types/backup'
+import { pickBackupFile, RestoreDialog } from '../backup/restore-dialog'
 
 type Step = 'welcome' | 'language' | 'store' | 'currency' | 'owner' | 'printer' | 'catalog' | 'done'
 const STEPS: Step[] = ['welcome', 'language', 'store', 'currency', 'owner', 'printer', 'catalog', 'done']
@@ -31,6 +33,7 @@ export function Onboarding() {
   const { t } = useTranslation()
   const load = useApp((s) => s.load)
   const [step, setStep] = useState<Step>('welcome')
+  const [restore, setRestore] = useState<BackupInspection | null>(null)
   const [lang, setLang] = useState<'ar' | 'en'>('ar')
   const [store, setStore] = useState({ name: '', phone: '', address: '', taxNumber: '' })
   const [currency, setCurrency] = useState('EGP')
@@ -106,6 +109,23 @@ export function Onboarding() {
           <BrandMark className="mx-auto mb-5 size-20" />
           <h1 className="text-3xl font-extrabold">{t('onboarding.welcomeTitle')}</h1>
           <p className="mx-auto mt-3 max-w-md text-muted">{t('onboarding.welcomeBody')}</p>
+          <div className="mx-auto mt-6 max-w-md rounded-2xl border border-dashed border-line-strong p-3 text-sm">
+            <p className="text-muted">{t('backup.fromBackupHint')}</p>
+            <Button
+              variant="link"
+              className="mt-1"
+              onClick={async () => {
+                try {
+                  const info = await pickBackupFile()
+                  if (info) setRestore(info)
+                } catch (err) {
+                  toastError(err)
+                }
+              }}
+            >
+              <History /> {t('backup.fromBackup')}
+            </Button>
+          </div>
         </div>
       )
       break
@@ -302,6 +322,7 @@ export function Onboarding() {
           </div>
         </div>
       </div>
+      {restore ? <RestoreDialog info={restore} firstLaunch onClose={() => setRestore(null)} /> : null}
     </div>
   )
 }

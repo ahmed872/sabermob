@@ -25,6 +25,7 @@ import { SecretsService } from '../security/secrets'
 import { QrService } from '../services/qr-service'
 import { OfferService } from '../services/offer-service'
 import { ReportService } from '../services/report-service'
+import { BackupService, plainKeyProtector, type KeyProtector } from '../backup/backup-service'
 
 export interface AppContextOptions {
   rootDir: string
@@ -35,6 +36,8 @@ export interface AppContextOptions {
   logToFiles?: boolean
   now?: () => Date
   publicKeyPem?: string
+  appVersion?: string
+  keyProtector?: KeyProtector
 }
 
 /**
@@ -67,6 +70,7 @@ export class AppContext {
   qr!: QrService
   offers!: OfferService
   reports!: ReportService
+  backup!: BackupService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -83,7 +87,8 @@ export class AppContext {
     this.paths = createPaths(o.rootDir)
     this.log = o.logToFiles === false ? createSilentLoggers() : createLoggers(this.paths.logs)
     this.deviceId = this.#loadDeviceId()
-    this.migration = migrateDatabase(this.paths.database, loadMigrations(o.migrationsDir), {
+    const migrations = loadMigrations(o.migrationsDir)
+    this.migration = migrateDatabase(this.paths.database, migrations, {
       backupDir: this.paths.backups,
       logger: this.log.app
     })
@@ -113,7 +118,23 @@ export class AppContext {
     this.reports = new ReportService(this.db, this.settings, this.catalog, this.customers, this.now)
     this.repairs = new RepairService(this.db, this.settings, this.audit, this.shifts, this.secrets, this.media, this.now)
 
+    this.backup = new BackupService({
+      db: this.db,
+      paths: this.paths,
+      settings: this.settings,
+      audit: this.audit,
+      gate: this.gate,
+      log: this.log,
+      deviceId: this.deviceId,
+      appVersion: o.appVersion ?? '0.0.0',
+      knownMigrations: migrations.map((m) => m.name),
+      protector: o.keyProtector ?? plainKeyProtector,
+      now: this.now
+    })
+
     await this.bootstrap.ensureSeed(o.deviceName, o.platformName)
+    await this.backup.init()
+    this.shutdownTasks.push(() => this.backup.onExit())
     await this.license.init()
     const stale = await this.auth.closeStaleSessions()
     if (stale > 0) this.log.app.warn('Closed sessions left open by an unclean shutdown', { count: stale })
@@ -136,7 +157,7 @@ export class AppContext {
     return deviceId
   }
 
-  /** Tasks that must run before the app exits (e.g. backup on exit). */
+  /** Tasks that must run before the app exits (e.g. backup on exit). They take the gate themselves. */
   readonly shutdownTasks: Array<() => Promise<void>> = []
 
   async onShutdown(): Promise<void> {
