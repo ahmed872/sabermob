@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ArrowLeft, Barcode, ChevronDown, Cpu, Layers, Package, Plus, Save, Smartphone, Sparkles, Trash2, Wrench, Boxes, Recycle } from 'lucide-react'
@@ -160,7 +160,10 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
       notes: ''
     }
   )
-  const [variants, setVariants] = useState<VariantForm[]>(init?.variants ?? [emptyVariant()])
+  const [searchParams] = useSearchParams()
+  const [variants, setVariants] = useState<VariantForm[]>(
+    init?.variants ?? [{ ...emptyVariant(), barcodes: searchParams.get('barcode') ? [searchParams.get('barcode')!] : [] }]
+  )
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [saving, setSaving] = useState(false)
   const [historyVariant, setHistoryVariant] = useState(init?.variants[0]?.id ?? '')

@@ -27,3 +27,17 @@ export async function loginWithPin(page: Page, pin = OWNER.pin): Promise<void> {
   await page.keyboard.type(pin)
   await page.keyboard.press('Enter')
 }
+
+export async function createProduct(page: Page, name: string, price: string, stock: string, barcode?: string): Promise<void> {
+  await page.goto(page.url().replace(/#.*$/, '#/inventory/products/new'))
+  await page.getByLabel('اسم الصنف').fill(name)
+  await page.getByLabel('سعر البيع').fill(price)
+  await page.getByLabel('الكمية الافتتاحية').fill(stock)
+  if (barcode) {
+    const input = page.getByPlaceholder('6221234567890')
+    await input.fill(barcode)
+    await input.press('Enter')
+  }
+  await page.getByRole('button', { name: 'حفظ' }).click()
+  await expect(page.getByText('تم حفظ الصنف').last()).toBeVisible()
+}

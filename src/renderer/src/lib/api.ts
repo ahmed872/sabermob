@@ -11,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-type OverrideHandler = (permission: string, details?: Record<string, unknown>) => Promise<string | null>
+type OverrideHandler = (permissions: string[], details?: Record<string, unknown>) => Promise<string | null>
 let overrideHandler: OverrideHandler | null = null
 
 /** Registered by <OverrideProvider/>: asks a manager to approve an action. */
@@ -34,8 +34,8 @@ export async function callWithOverride<K extends ApiMethod>(method: K, input: Ap
     return await call(method, input)
   } catch (err) {
     if (!(err instanceof ApiError) || err.code !== 'OVERRIDE_REQUIRED' || !overrideHandler) throw err
-    const permission = String(err.details?.permission ?? '')
-    const token = await overrideHandler(permission, err.details)
+    const list = Array.isArray(err.details?.permissions) ? (err.details.permissions as string[]) : [String(err.details?.permission ?? '')]
+    const token = await overrideHandler(list, err.details)
     if (!token) throw err
     return call(method, { ...(input as object), overrideToken: token } as ApiInput<K>)
   }

@@ -7,6 +7,7 @@ test('first launch → owner login → create product → find it in inventory',
   try {
     await onboard(page)
     await loginWithPin(page)
+    await page.getByRole('link', { name: /المخزن/ }).click()
     await expect(page.getByRole('heading', { name: 'المخزن' })).toBeVisible({ timeout: 15_000 })
     await page.screenshot({ path: 'test-results/shots/inventory-empty.png' })
 

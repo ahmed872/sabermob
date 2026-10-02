@@ -10,8 +10,14 @@ export interface AppRoute {
 const InventoryPage = lazy(() => import('../features/inventory/inventory-page'))
 const ProductEditorPage = lazy(() => import('../features/inventory/product-editor'))
 const SettingsPage = lazy(() => import('../features/settings/settings-page'))
+const PosPage = lazy(() => import('../features/pos/pos-page'))
+const SalesHistoryPage = lazy(() => import('../features/sales/sales-history'))
+const ShiftsPage = lazy(() => import('../features/sales/shifts-page'))
 
 export const ROUTES: AppRoute[] = [
+  { path: '/pos', component: PosPage, permission: ['create_sale'] },
+  { path: '/sales/history', component: SalesHistoryPage, permission: ['create_sale', 'view_sales'] },
+  { path: '/sales/shifts', component: ShiftsPage, permission: ['view_all_shifts'] },
   { path: '/inventory', component: InventoryPage, permission: ['view_inventory'] },
   { path: '/inventory/:tab', component: InventoryPage, permission: ['view_inventory'] },
   { path: '/inventory/products/new', component: ProductEditorPage, permission: ['manage_inventory'] },

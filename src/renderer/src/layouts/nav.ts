@@ -15,7 +15,7 @@ export interface NavItem {
  */
 export const NAV: NavItem[] = [
   { to: '/dashboard', label: 'nav.dashboard', icon: Home },
-  { to: '/pos', label: 'nav.sales', icon: ShoppingCart, permission: ['create_sale', 'view_sales'] },
+  { to: '/pos', label: 'nav.sales', icon: ShoppingCart, permission: ['create_sale'] },
   { to: '/inventory', label: 'nav.inventory', icon: Package, permission: ['view_inventory'] },
   { to: '/repairs', label: 'nav.repairs', icon: Wrench, permission: ['view_repairs'] },
   { to: '/customers', label: 'nav.customers', icon: Users, permission: ['view_customer_data'] },

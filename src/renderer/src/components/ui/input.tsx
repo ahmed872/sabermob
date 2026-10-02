@@ -70,7 +70,7 @@ function useOptionalText(): string {
 
 export const SearchInput = forwardRef<
   HTMLInputElement,
-  InputHTMLAttributes<HTMLInputElement> & { onClear?: () => void; size?: 'md' | 'lg' }
+  Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & { onClear?: () => void; size?: 'md' | 'lg' }
 >(({ className, onClear, value, size = 'md', ...props }, ref) => (
   <div className="relative">
     <Search className={cn('pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-subtle', size === 'lg' ? 'size-5' : 'size-4')} />

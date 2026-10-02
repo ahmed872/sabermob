@@ -40,6 +40,7 @@ export type LoginInput = z.input<typeof loginSchema>
 
 export const overrideSchema = loginSchema.extend({
   permission: z.enum(ALL_PERMISSIONS as [PermissionKey, ...PermissionKey[]]),
+  permissions: z.array(z.enum(ALL_PERMISSIONS as [PermissionKey, ...PermissionKey[]])).max(10).optional(),
   reason: z.string().max(200).optional()
 })
 export type OverrideInput = z.input<typeof overrideSchema>

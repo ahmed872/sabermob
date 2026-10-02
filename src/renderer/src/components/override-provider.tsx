@@ -9,7 +9,7 @@ import { Dialog } from './ui/dialog'
 import { Field, Input, Select } from './ui/input'
 
 interface Pending {
-  permission: string
+  permissions: string[]
   resolve: (token: string | null) => void
 }
 
@@ -29,9 +29,9 @@ export function OverrideProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setOverrideHandler(
-      (permission) =>
+      (permissions) =>
         new Promise<string | null>((resolve) => {
-          const p = { permission, resolve }
+          const p = { permissions, resolve }
           pendingRef.current = p
           setPending(p)
           setSecret('')
@@ -61,7 +61,8 @@ export function OverrideProvider({ children }: { children: ReactNode }) {
         userId,
         secret,
         method: user?.hasPin && /^\d{4,8}$/.test(secret) ? 'PIN' : 'PASSWORD',
-        permission: pending.permission as never
+        permission: pending.permissions[0] as never,
+        permissions: pending.permissions as never
       })
       close(res.token)
     } catch (err) {
@@ -84,7 +85,7 @@ export function OverrideProvider({ children }: { children: ReactNode }) {
             {t('auth.approvalTitle')}
           </span>
         }
-        description={pending ? t('auth.approvalBody', { permission: t(`permissions.${pending.permission}`) }) : null}
+        description={pending ? t('auth.approvalBody', { permission: pending.permissions.map((p) => t(`permissions.${p}`)).join('، ') }) : null}
         footer={
           <>
             <Button variant="outline" onClick={() => close(null)}>

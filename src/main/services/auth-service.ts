@@ -21,7 +21,8 @@ export interface Actor {
 }
 
 interface OverrideGrant {
-  permission: PermissionKey
+  permissions: PermissionKey[]
+  maxDiscountBp: number
   approverId: string
   approverName: string
   sessionId: string
@@ -254,18 +255,20 @@ export class AuthService {
     secret: string
     method: 'PASSWORD' | 'PIN'
     permission: PermissionKey
+    permissions?: PermissionKey[]
     reason?: string
   }): Promise<{ token: string; approverName: string }> {
     const current = this.#actor
     if (!current) throw new AppError('UNAUTHENTICATED')
     const approver = await this.#verify(input.userId ?? null, input.username ?? null, input.secret, input.method)
     const approverActor = await this.#loadActor(approver.id, current.sessionId)
-    if (!approverActor.permissions.has(input.permission)) {
-      throw new AppError('FORBIDDEN', 'Approver lacks permission', { permission: input.permission })
-    }
+    const wanted = [...new Set([input.permission, ...(input.permissions ?? [])])]
+    const lacking = wanted.find((p) => !approverActor.permissions.has(p))
+    if (lacking) throw new AppError('FORBIDDEN', 'Approver lacks permission', { permission: lacking })
     const token = randomBytes(24).toString('base64url')
     this.#overrides.set(token, {
-      permission: input.permission,
+      permissions: wanted,
+      maxDiscountBp: approverActor.maxDiscountBp,
       approverId: approver.id,
       approverName: approver.fullName,
       sessionId: current.sessionId,
@@ -274,14 +277,14 @@ export class AuthService {
     await this.audit.log({
       userId: approver.id,
       action: 'auth.override_granted',
-      metadata: { permission: input.permission, forUserId: current.userId, reason: input.reason ?? null }
+      metadata: { permissions: wanted, forUserId: current.userId, reason: input.reason ?? null }
     })
-    this.log.security.info('Override granted', { approverId: approver.id, forUserId: current.userId, permission: input.permission })
+    this.log.security.info('Override granted', { approverId: approver.id, forUserId: current.userId, permissions: wanted })
     return { token, approverName: approver.fullName }
   }
 
-  /** Validates and consumes an override token; returns approver info. */
-  consumeOverride(token: string | null | undefined, permission: PermissionKey): { approverId: string } | null {
+  /** Validates and consumes an override token covering `permissions`. */
+  consumeOverride(token: string | null | undefined, permissions: PermissionKey[], discountBp = 0): { approverId: string } | null {
     if (!token || !this.#actor) return null
     for (const [key, grant] of this.#overrides) {
       const a = Buffer.from(key)
@@ -289,7 +292,9 @@ export class AuthService {
       if (a.length === b.length && timingSafeEqual(a, b)) {
         this.#overrides.delete(key)
         if (grant.expiresAt < this.now().getTime()) return null
-        if (grant.sessionId !== this.#actor.sessionId || grant.permission !== permission) return null
+        if (grant.sessionId !== this.#actor.sessionId) return null
+        if (!permissions.every((p) => grant.permissions.includes(p))) return null
+        if (discountBp > grant.maxDiscountBp) return null
         return { approverId: grant.approverId }
       }
     }
@@ -297,14 +302,24 @@ export class AuthService {
   }
 
   /**
-   * Checks the current actor has `permission`, or a valid override token
-   * for it. Returns the approver id when an override was used.
+   * Checks the actor holds every permission in `permissions` (and may give
+   * `discountBp`), or that a manager approved them with `overrideToken`.
+   * Returns the approver id when an approval was used, null otherwise.
+   * Throws OVERRIDE_REQUIRED listing everything that needs approval.
    */
-  authorize(actor: Actor, permission: PermissionKey, overrideToken?: string | null): string | null {
-    if (actor.permissions.has(permission)) return null
-    const grant = this.consumeOverride(overrideToken, permission)
+  authorizeAll(actor: Actor, permissions: PermissionKey[], overrideToken?: string | null, opts: { discountBp?: number } = {}): string | null {
+    const missing = [...new Set(permissions)].filter((p) => !actor.permissions.has(p))
+    const discountBp = opts.discountBp ?? 0
+    const discountExceeded = discountBp > actor.maxDiscountBp
+    if (missing.length === 0 && !discountExceeded) return null
+    const needed = discountExceeded && !missing.includes('apply_discount') ? [...missing, 'apply_discount' as PermissionKey] : missing
+    const grant = this.consumeOverride(overrideToken, needed, discountExceeded ? discountBp : 0)
     if (grant) return grant.approverId
-    throw new AppError('OVERRIDE_REQUIRED', 'Manager approval required', { permission })
+    throw new AppError('OVERRIDE_REQUIRED', 'Manager approval required', { permission: needed[0], permissions: needed, discountBp: discountExceeded ? discountBp : undefined })
+  }
+
+  authorize(actor: Actor, permission: PermissionKey, overrideToken?: string | null): string | null {
+    return this.authorizeAll(actor, [permission], overrideToken)
   }
 
   async changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {

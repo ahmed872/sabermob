@@ -15,6 +15,9 @@ import { CatalogService } from '../services/catalog-service'
 import { InventoryService } from '../services/inventory-service'
 import { SettingsService } from '../services/settings-service'
 import { UserService } from '../services/user-service'
+import { CustomerService } from '../services/customer-service'
+import { SalesService } from '../services/sales-service'
+import { ShiftService } from '../services/shift-service'
 
 export interface AppContextOptions {
   rootDir: string
@@ -47,6 +50,9 @@ export class AppContext {
   catalog!: CatalogService
   inventory!: InventoryService
   bootstrap!: BootstrapService
+  shifts!: ShiftService
+  customers!: CustomerService
+  sales!: SalesService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -80,11 +86,15 @@ export class AppContext {
     this.catalog = new CatalogService(this.db, this.settings, this.audit)
     this.inventory = new InventoryService(this.db, this.settings, this.audit)
     this.bootstrap = new BootstrapService(this.db, this.settings, this.audit, this.deviceId, () => this.catalog)
+    this.shifts = new ShiftService(this.db, this.audit)
+    this.customers = new CustomerService(this.db, this.audit, () => this.shifts)
+    this.sales = new SalesService(this.db, this.settings, this.audit, this.auth, this.shifts, this.customers, this.log)
 
     await this.bootstrap.ensureSeed(o.deviceName, o.platformName)
     await this.license.init()
     const stale = await this.auth.closeStaleSessions()
     if (stale > 0) this.log.app.warn('Closed sessions left open by an unclean shutdown', { count: stale })
+    await this.sales.recoverOnStartup()
   }
 
   /** Installation id: per install, outside the workspace (not moved with exports). */

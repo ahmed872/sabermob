@@ -4,5 +4,6 @@ import { errors } from './errors'
 import { permissions } from './permissions'
 import { inventory } from './inventory'
 import { admin } from './admin'
+import { pos } from './pos'
 
-export const modules = [common, errors, auth, permissions, inventory, admin]
+export const modules = [common, errors, auth, permissions, inventory, admin, pos]

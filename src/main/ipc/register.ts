@@ -3,6 +3,7 @@ import type { ApiEventName, ApiEvents } from '@shared/ipc/contract'
 import type { AppContext } from '../app/context'
 import type { ApiRouter } from './router'
 import { registerCoreHandlers } from './handlers/core'
+import { registerPosHandlers } from './handlers/pos'
 
 export interface HandlerDeps {
   appVersion: string
@@ -22,4 +23,5 @@ export function registerAllHandlers(router: ApiRouter, _ctx: AppContext, deps: H
     return printers.map((p) => ({ name: p.name, displayName: p.displayName || p.name, isDefault: !!(p as { isDefault?: boolean }).isDefault }))
   }
   registerCoreHandlers(router, { ...deps, listPrinters })
+  registerPosHandlers(router)
 }
