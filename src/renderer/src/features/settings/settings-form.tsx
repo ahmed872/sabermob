@@ -9,6 +9,7 @@ import { useApp } from '../../stores/app'
 import { Button } from '../../components/ui/button'
 import { Field, Input, MoneyInput, NumberInput, Select, Textarea } from '../../components/ui/input'
 import { Card, Checkbox, SwitchRow } from '../../components/ui/misc'
+import { GROUP_EXTRAS } from './group-extras'
 
 type Spec =
   | { key: string; type: 'switch'; label?: string; hint?: string; showIf?: (v: Values) => boolean }
@@ -227,6 +228,7 @@ export function SettingsGroupForm({ group }: { group: SettingsGroup }) {
             }
           })}
       </div>
+      {GROUP_EXTRAS[group] ? <div className="mt-3 border-t border-line pt-3">{GROUP_EXTRAS[group]!()}</div> : null}
       <div className="mt-4 flex items-center justify-end gap-3 border-t border-line pt-4">
         {dirty ? <span className="text-xs font-semibold text-warning">{t('settings.unsaved')}</span> : null}
         <Button onClick={() => save.mutate({ group, values })} loading={save.isPending} disabled={!dirty}>

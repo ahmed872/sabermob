@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ArrowDownToLine, ArrowUpFromLine, Lock, Wallet } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, Lock, Printer, Wallet } from 'lucide-react'
+import { printDocument } from '../../lib/print'
 import type { ShiftSummary } from '@shared/types/sales'
 import { useApi, useApiMutation } from '../../lib/query'
 import { fmtDate, fmtMoney, fmtNumber } from '../../lib/format'
@@ -94,6 +95,9 @@ export function ShiftSummaryView({ s }: { s: ShiftSummary }) {
           {t('pos.countedCash')}: {fmtMoney(s.countedCash)} · {t('pos.difference')}: <span className="tabular" dir="ltr">{fmtMoney(s.difference)}</span>
         </div>
       ) : null}
+      <Button variant="outline" size="sm" onClick={() => void printDocument({ type: 'shiftReport', shiftId: s.id })}>
+        <Printer /> {t('print.print')}
+      </Button>
       <p className="text-xs text-muted">
         {s.openedBy} · {fmtDate(s.openedAt, true)}
         {s.closedAt ? ` → ${fmtDate(s.closedAt, true)}` : ''}
@@ -122,8 +126,9 @@ export function ShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   })
   const close = useApiMutation('shifts.close', {
     invalidate: ['shifts.'],
-    onSuccess: () => {
+    onSuccess: (closed) => {
       toast.success(t('pos.shiftClosed'))
+      void printDocument({ type: 'shiftReport', shiftId: closed.id }, { quiet: true })
       onOpenChange(false)
       setMode('summary')
     }

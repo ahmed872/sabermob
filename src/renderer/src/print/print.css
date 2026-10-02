@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@import '@fontsource/cairo/400.css';
+@import '@fontsource/cairo/600.css';
+@import '@fontsource/cairo/700.css';
+@import '@fontsource/cairo/800.css';
+@import '@fontsource/cairo/900.css';
+
+@page { margin: 0; }
+html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: 'Cairo', 'Segoe UI', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.tabular { font-variant-numeric: tabular-nums; }

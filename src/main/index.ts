@@ -144,6 +144,7 @@ async function bootstrap(): Promise<void> {
     getWindow: () => mainWindow,
     rendererDir: RENDERER_DIR,
     rendererUrl: isDev ? process.env.ELECTRON_RENDERER_URL! : `${APP_SCHEME}://bundle`,
+    preloadPath: join(__dirname, '../preload/index.js'),
     emit
   })
 

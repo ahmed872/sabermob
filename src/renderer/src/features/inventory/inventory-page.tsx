@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowDownUp, Boxes, Package, PackagePlus, Star } from 'lucide-react'
+import { ArrowDownUp, Boxes, Package, PackagePlus, Star, Tags } from 'lucide-react'
 import type { ProductQueryInput } from '@shared/schemas/catalog'
 import type { VariantListItem } from '@shared/types/catalog'
 import { PRODUCT_TYPES } from '@shared/constants/enums'
@@ -16,6 +16,7 @@ import { DataTable, Pagination, type Column } from '../../components/ui/table'
 import { AdjustStockDialog } from './adjust-dialog'
 import { MovementsTab } from './movements-tab'
 import { SetupTab } from './setup-tab'
+import { LabelsDialog } from './labels-dialog'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
@@ -23,6 +24,7 @@ export default function InventoryPage() {
   const navigate = useNavigate()
   const can = useCan()
   const [adjustOpen, setAdjustOpen] = useState(false)
+  const [labelsOpen, setLabelsOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-col p-5">
@@ -32,6 +34,9 @@ export default function InventoryPage() {
         subtitle={t('inventory.subtitle')}
         actions={
           <>
+            <Button variant="outline" onClick={() => setLabelsOpen(true)}>
+              <Tags /> {t('print.labels')}
+            </Button>
             {can('modify_stock') ? (
               <Button variant="outline" onClick={() => setAdjustOpen(true)}>
                 <ArrowDownUp /> {t('inventory.adjust')}
@@ -59,6 +64,7 @@ export default function InventoryPage() {
         {tab === 'stock' ? <MovementsTab /> : tab === 'setup' ? <SetupTab /> : <ProductsTab />}
       </div>
       {adjustOpen ? <AdjustStockDialog open={adjustOpen} onOpenChange={setAdjustOpen} /> : null}
+      {labelsOpen ? <LabelsDialog onClose={() => setLabelsOpen(false)} /> : null}
     </div>
   )
 }

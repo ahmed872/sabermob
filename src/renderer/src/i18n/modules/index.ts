@@ -6,5 +6,6 @@ import { inventory } from './inventory'
 import { admin } from './admin'
 import { pos } from './pos'
 import { business } from './business'
+import { print } from './print'
 
-export const modules = [common, errors, auth, permissions, inventory, admin, pos, business]
+export const modules = [common, errors, auth, permissions, inventory, admin, pos, business, print]

@@ -10,7 +10,7 @@ export async function launchApp(dataDir?: string): Promise<{ app: ElectronApplic
   const app = await electron.launch({
     executablePath: join(ROOT, 'node_modules/electron/dist/electron'),
     args: [ROOT, '--no-sandbox', '--disable-gpu'],
-    env: { ...process.env, CENTRAL_DATA_DIR: dir, CENTRAL_MAXIMIZE: '0', NODE_ENV: 'production', ELECTRON_RENDERER_URL: '' }
+    env: { ...process.env, CENTRAL_E2E_PDF_DIR: dir, CENTRAL_DATA_DIR: dir, CENTRAL_MAXIMIZE: '0', NODE_ENV: 'production', ELECTRON_RENDERER_URL: '' }
   })
   const page = await app.firstWindow()
   await page.setViewportSize({ width: 1366, height: 800 })
