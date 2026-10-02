@@ -25,6 +25,8 @@ export interface CartLine {
   categoryId: string | null
   offerId: string | null
   offerLabel: string | null
+  /** discount applied automatically by an owner-configured offer */
+  autoOffer?: boolean
 }
 
 export interface OfferEventRecord {

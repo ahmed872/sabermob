@@ -186,7 +186,12 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
       trackStock: product.type !== 'SERVICE',
       trackSerials: product.type === 'USED_DEVICE' || product.type === 'DEVICE',
       warrantyDays: p.warrantyDays ?? (product.type === 'DEVICE' ? 365 : product.type === 'USED_DEVICE' ? 30 : null),
-      categoryId: p.categoryId || categories.data?.find((c) => c.kind === (product.type === 'USED_DEVICE' || product.type === 'DEVICE' ? 'DEVICE' : product.type === 'CUSTOM' ? 'OTHER' : product.type))?.id || ''
+      // Only pre-select a category when it is unambiguous (one category of that kind).
+      categoryId: p.categoryId || (() => {
+        const kind = product.type === 'USED_DEVICE' || product.type === 'DEVICE' ? 'DEVICE' : product.type === 'CUSTOM' ? 'OTHER' : product.type
+        const matching = categories.data?.filter((c) => c.kind === kind) ?? []
+        return matching.length === 1 ? matching[0]!.id : ''
+      })()
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.type, categories.data])

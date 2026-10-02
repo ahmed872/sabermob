@@ -19,6 +19,7 @@ import {
   repairUpdateSchema
 } from '@shared/schemas/repairs'
 import { byId, empty, id, optText } from '@shared/schemas/common'
+import { offerSaveSchema, suggestSchema } from '@shared/schemas/offers'
 import { AppError } from '@shared/errors'
 import type { ApiRouter } from '../router'
 
@@ -78,4 +79,18 @@ export function registerModuleHandlers(r: ApiRouter): void {
     })
     return users
   })
+}
+
+export function registerOfferHandlers(r: ApiRouter): void {
+  r.handle('offers.list', { input: empty, permission: ['manage_offers', 'view_offer_analytics'] }, (_i, { app }) => app.offers.list())
+  r.handle('offers.save', { input: offerSaveSchema, permission: 'manage_offers' }, (input, { app, actor }) => app.offers.save(input, actor!))
+  r.handle('offers.delete', { input: byId, permission: 'manage_offers' }, async (input, { app, actor }) => {
+    await app.offers.remove(input.id, actor!)
+    return { ok: true as const }
+  })
+  r.handle('offers.suggest', { input: suggestSchema, permission: 'create_sale' }, (input, { app }) => app.offers.suggest(input))
+  r.handle('offers.analytics', { input: z.object({ from: z.string().optional(), to: z.string().optional() }), permission: 'view_offer_analytics' }, (input, { app }) =>
+    app.offers.analytics(input.from, input.to)
+  )
+  r.handle('offers.insights', { input: empty, permission: ['manage_offers', 'view_reports'] }, (_i, { app }) => app.offers.insights())
 }

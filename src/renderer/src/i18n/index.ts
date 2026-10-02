@@ -2,11 +2,11 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { modules } from './modules'
 
-type Tree = { [k: string]: string | Tree }
+type Tree = { [k: string]: string | string[] | Tree }
 
 function merge(target: Tree, src: Tree): Tree {
   for (const [k, v] of Object.entries(src)) {
-    if (typeof v === 'object' && v) target[k] = merge((target[k] as Tree) ?? {}, v)
+    if (typeof v === 'object' && v && !Array.isArray(v)) target[k] = merge((target[k] as Tree) ?? {}, v)
     else target[k] = v
   }
   return target

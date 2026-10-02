@@ -18,6 +18,7 @@ const CustomerDetailPage = lazy(() => import('../features/customers/customer-det
 const SuppliersPage = lazy(() => import('../features/suppliers/suppliers-page'))
 const SupplierDetailPage = lazy(() => import('../features/suppliers/supplier-detail'))
 const PurchaseEditorPage = lazy(() => import('../features/suppliers/purchase-editor'))
+const OffersPage = lazy(() => import('../features/offers/offers-page'))
 const RepairsPage = lazy(() => import('../features/repairs/repairs-page'))
 const RepairNewPage = lazy(() => import('../features/repairs/repair-new'))
 const RepairDetailPage = lazy(() => import('../features/repairs/repair-detail'))
@@ -30,6 +31,7 @@ export const ROUTES: AppRoute[] = [
   { path: '/inventory/:tab', component: InventoryPage, permission: ['view_inventory'] },
   { path: '/inventory/products/new', component: ProductEditorPage, permission: ['manage_inventory'] },
   { path: '/inventory/products/:id', component: ProductEditorPage, permission: ['view_inventory'] },
+  { path: '/offers', component: OffersPage, permission: ['manage_offers', 'view_offer_analytics'] },
   { path: '/repairs', component: RepairsPage, permission: ['view_repairs'] },
   { path: '/repairs/new', component: RepairNewPage, permission: ['manage_repairs'] },
   { path: '/repairs/:id', component: RepairDetailPage, permission: ['view_repairs'] },

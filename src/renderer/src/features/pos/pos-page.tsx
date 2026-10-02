@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Clock3, History, PauseCircle, Percent, Receipt, Trash2, Wallet, FileText, Zap } from 'lucide-react'
+import { Clock3, Gift, History, PauseCircle, Percent, Receipt, Trash2, Wallet, FileText, Zap } from 'lucide-react'
 import type { VariantListItem } from '@shared/types/catalog'
 import type { SaleDto } from '@shared/types/sales'
 import { call } from '../../lib/api'
@@ -191,6 +191,11 @@ export default function PosPage() {
             <Button variant="ghost" size="sm" onClick={() => setDialog('held')}>
               <PauseCircle /> {t('pos.held')}
             </Button>
+            {can(['manage_offers', 'view_offer_analytics']) ? (
+              <Button variant="ghost" size="sm" onClick={() => navigate('/offers')}>
+                <Gift /> {t('offers.title')}
+              </Button>
+            ) : null}
             {can(['view_all_shifts']) ? (
               <Button variant="ghost" size="sm" onClick={() => navigate('/sales/shifts')}>
                 <Clock3 /> {t('pos.shifts')}

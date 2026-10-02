@@ -16,6 +16,8 @@ import { ROUTES, DEFAULT_ROUTE } from './routes'
 import { LanguageToggle, ThemeToggle } from './preferences'
 import { AccountDialog, useAccountDialog } from '../features/auth/account-dialog'
 import { ShellExtras } from './shell-extras'
+import { ErrorBoundary } from '../components/error-boundary'
+import { useLocation } from 'react-router-dom'
 
 export function Shell() {
   const { t } = useTranslation()
@@ -25,6 +27,7 @@ export function Shell() {
   const storeName = useApp((s) => s.system?.storeName)
   const navigate = useNavigate()
   const account = useAccountDialog()
+  const location = useLocation()
 
   const items = NAV.filter((n) => ROUTES.some((r) => r.path.startsWith(n.to)) && (!n.permission || can(n.permission)))
 
@@ -121,6 +124,7 @@ export function Shell() {
         </header>
         <main className="min-h-0 flex-1 overflow-hidden">
           {operational ? (
+            <ErrorBoundary resetKey={location.pathname}>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {ROUTES.filter((r) => !r.permission || can(r.permission)).map((r) => (
@@ -129,6 +133,7 @@ export function Shell() {
                 <Route path="*" element={<Navigate to={DEFAULT_ROUTE(can)} replace />} />
               </Routes>
             </Suspense>
+            </ErrorBoundary>
           ) : (
             <ActivationScreen />
           )}
