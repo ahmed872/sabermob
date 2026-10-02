@@ -18,6 +18,10 @@ import { UserService } from '../services/user-service'
 import { CustomerService } from '../services/customer-service'
 import { SalesService } from '../services/sales-service'
 import { ShiftService } from '../services/shift-service'
+import { SupplierService } from '../services/supplier-service'
+import { RepairService } from '../services/repair-service'
+import { MediaService } from '../services/media-service'
+import { SecretsService } from '../security/secrets'
 
 export interface AppContextOptions {
   rootDir: string
@@ -53,6 +57,10 @@ export class AppContext {
   shifts!: ShiftService
   customers!: CustomerService
   sales!: SalesService
+  suppliers!: SupplierService
+  repairs!: RepairService
+  media!: MediaService
+  secrets!: SecretsService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -89,6 +97,11 @@ export class AppContext {
     this.shifts = new ShiftService(this.db, this.audit)
     this.customers = new CustomerService(this.db, this.audit, () => this.shifts)
     this.sales = new SalesService(this.db, this.settings, this.audit, this.auth, this.shifts, this.customers, this.log)
+    this.suppliers = new SupplierService(this.db, this.audit, this.shifts)
+    this.secrets = new SecretsService(this.settings)
+    await this.secrets.init()
+    this.media = new MediaService(this.paths.media)
+    this.repairs = new RepairService(this.db, this.settings, this.audit, this.shifts, this.secrets, this.media, this.now)
 
     await this.bootstrap.ensureSeed(o.deviceName, o.platformName)
     await this.license.init()

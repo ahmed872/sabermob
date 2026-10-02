@@ -13,6 +13,14 @@ const SettingsPage = lazy(() => import('../features/settings/settings-page'))
 const PosPage = lazy(() => import('../features/pos/pos-page'))
 const SalesHistoryPage = lazy(() => import('../features/sales/sales-history'))
 const ShiftsPage = lazy(() => import('../features/sales/shifts-page'))
+const CustomersPage = lazy(() => import('../features/customers/customers-page'))
+const CustomerDetailPage = lazy(() => import('../features/customers/customer-detail'))
+const SuppliersPage = lazy(() => import('../features/suppliers/suppliers-page'))
+const SupplierDetailPage = lazy(() => import('../features/suppliers/supplier-detail'))
+const PurchaseEditorPage = lazy(() => import('../features/suppliers/purchase-editor'))
+const RepairsPage = lazy(() => import('../features/repairs/repairs-page'))
+const RepairNewPage = lazy(() => import('../features/repairs/repair-new'))
+const RepairDetailPage = lazy(() => import('../features/repairs/repair-detail'))
 
 export const ROUTES: AppRoute[] = [
   { path: '/pos', component: PosPage, permission: ['create_sale'] },
@@ -22,6 +30,14 @@ export const ROUTES: AppRoute[] = [
   { path: '/inventory/:tab', component: InventoryPage, permission: ['view_inventory'] },
   { path: '/inventory/products/new', component: ProductEditorPage, permission: ['manage_inventory'] },
   { path: '/inventory/products/:id', component: ProductEditorPage, permission: ['view_inventory'] },
+  { path: '/repairs', component: RepairsPage, permission: ['view_repairs'] },
+  { path: '/repairs/new', component: RepairNewPage, permission: ['manage_repairs'] },
+  { path: '/repairs/:id', component: RepairDetailPage, permission: ['view_repairs'] },
+  { path: '/customers', component: CustomersPage, permission: ['view_customer_data'] },
+  { path: '/customers/:id', component: CustomerDetailPage, permission: ['view_customer_data'] },
+  { path: '/suppliers', component: SuppliersPage, permission: ['manage_suppliers', 'view_supplier_balances', 'manage_purchases'] },
+  { path: '/suppliers/purchases/new', component: PurchaseEditorPage, permission: ['manage_purchases'] },
+  { path: '/suppliers/:id', component: SupplierDetailPage, permission: ['manage_suppliers', 'view_supplier_balances', 'manage_purchases'] },
   { path: '/settings', component: SettingsPage },
   { path: '/settings/:section', component: SettingsPage }
 ]

@@ -4,6 +4,7 @@ import type { AppContext } from '../app/context'
 import type { ApiRouter } from './router'
 import { registerCoreHandlers } from './handlers/core'
 import { registerPosHandlers } from './handlers/pos'
+import { registerModuleHandlers } from './handlers/modules'
 
 export interface HandlerDeps {
   appVersion: string
@@ -24,4 +25,5 @@ export function registerAllHandlers(router: ApiRouter, _ctx: AppContext, deps: H
   }
   registerCoreHandlers(router, { ...deps, listPrinters })
   registerPosHandlers(router)
+  registerModuleHandlers(router)
 }
