@@ -35,7 +35,51 @@ export function PrintDocumentView({ doc }: { doc: PrintDocument }) {
       return <Labels doc={doc} />
     case 'test':
       return <TestPage doc={doc} />
+    case 'table':
+      return <TablePage doc={doc} />
   }
+}
+
+function TablePage({ doc }: { doc: Extract<PrintDocument, { type: 'table' }> }) {
+  const f = useFmt(doc.store)
+  const cell = (type: string | undefined, v: string | number | null | undefined) =>
+    v === null || v === undefined ? '—' : type === 'money' && typeof v === 'number' ? f.money(v) : type === 'date' && typeof v === 'string' ? f.date(v, false) : String(v)
+  return (
+    <div className="w-[794px] bg-white p-8 text-[11px] text-black">
+      <div className="mb-4 flex items-end justify-between border-b-2 border-black pb-2">
+        <div>
+          <p className="text-lg font-extrabold">{doc.table.title}</p>
+          {doc.table.subtitle ? <p>{doc.table.subtitle}</p> : null}
+        </div>
+        <div className="text-end">
+          <p className="font-bold">{doc.store.name}</p>
+          <p>{f.date(doc.generatedAt)}</p>
+        </div>
+      </div>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-black text-white">
+            {doc.table.columns.map((c) => (
+              <th key={c.key} className={`p-1.5 ${c.type === 'money' || c.type === 'number' ? 'text-end' : 'text-start'}`}>
+                {c.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {doc.table.rows.map((r, i) => (
+            <tr key={i} className="border-b border-black/20 even:bg-black/[0.03]" style={{ breakInside: 'avoid' }}>
+              {doc.table.columns.map((c) => (
+                <td key={c.key} className={`p-1.5 ${c.type === 'money' || c.type === 'number' ? 'text-end tabular' : ''}`}>
+                  {cell(c.type, r[c.key])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 const thermal = (paper: string) => (paper === '58mm' ? 'w-[219px] text-[11px]' : paper === '80mm' ? 'w-[302px] text-[12px]' : 'w-[794px] text-[13px] p-8')

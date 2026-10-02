@@ -1,6 +1,7 @@
 import type { PaperSize } from '../constants/enums'
 import type { SaleDto, ShiftSummary } from './sales'
 import type { RepairDto } from './repairs'
+import type { ExportTable } from './reports'
 
 export interface QrResolution {
   kind: 'sale' | 'repair' | 'product' | 'customer'
@@ -41,6 +42,7 @@ export type PrintDocument =
       labels: Array<{ name: string; price: number; barcode: string | null; qr: string | null }>
     }
   | { type: 'test'; paper: PaperSize; store: PrintStore }
+  | { type: 'table'; paper: 'A4'; store: PrintStore; table: ExportTable; generatedAt: string }
 
 export type PrintRequest =
   | { type: 'receipt' | 'invoice'; saleId: string; reprint?: boolean; paper?: PaperSize }

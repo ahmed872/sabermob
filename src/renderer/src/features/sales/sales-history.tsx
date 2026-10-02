@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Receipt } from 'lucide-react'
 import type { SaleQueryInput } from '@shared/schemas/sales'
@@ -42,7 +42,9 @@ export default function SalesHistoryPage() {
   const [period, setPeriod] = useState<Period>('today')
   const [q, setQ] = useState('')
   const [query, setQuery] = useState<SaleQueryInput>({ page: 1, pageSize: 50 })
-  const [open, setOpen] = useState<string | null>(null)
+  const [params, setParams] = useSearchParams()
+  const open = params.get('sale')
+  const setOpen = (id: string | null) => setParams(id ? { sale: id } : {}, { replace: true })
   const setSearch = useMemo(() => debounce((v: string) => setQuery((x) => ({ ...x, q: v || undefined, page: 1 })), 250), [])
   const range = periodRange(period)
   const list = useApi('pos.sales', { ...query, ...range }, { placeholderData: (p) => p })

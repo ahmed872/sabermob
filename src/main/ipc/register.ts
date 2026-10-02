@@ -6,6 +6,7 @@ import { registerCoreHandlers } from './handlers/core'
 import { registerPosHandlers } from './handlers/pos'
 import { registerModuleHandlers, registerOfferHandlers } from './handlers/modules'
 import { registerPrintingHandlers } from './handlers/printing'
+import { registerReportHandlers } from './handlers/reports'
 import { Printer } from '../printing/printer'
 
 export interface HandlerDeps {
@@ -30,5 +31,7 @@ export function registerAllHandlers(router: ApiRouter, ctx: AppContext, deps: Ha
   registerPosHandlers(router)
   registerModuleHandlers(router)
   registerOfferHandlers(router)
-  registerPrintingHandlers(router, new Printer(deps.rendererUrl, deps.preloadPath, ctx.log), deps.getWindow)
+  const printer = new Printer(deps.rendererUrl, deps.preloadPath, ctx.log)
+  registerPrintingHandlers(router, printer, deps.getWindow)
+  registerReportHandlers(router, printer, deps.getWindow)
 }

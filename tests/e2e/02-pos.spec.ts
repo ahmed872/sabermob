@@ -49,8 +49,8 @@ test('POS: open shift → scan → pay cash with change → sale in history, sto
     await expect(page.getByTestId('cart-total')).toHaveText(/0/)
 
     await page.getByRole('button', { name: 'سجل المبيعات' }).click()
-    await expect(page.getByText('S-000001')).toBeVisible()
-    await page.getByText('S-000001').click()
+    await expect(page.getByRole('cell', { name: 'S-000001' })).toBeVisible()
+    await page.getByRole('cell', { name: 'S-000001' }).click()
     await expect(page.getByText('شاحن أنكر 20 وات')).toBeVisible()
     await page.screenshot({ path: 'test-results/shots/sale-detail.png' })
     await page.keyboard.press('Escape')

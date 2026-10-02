@@ -26,6 +26,8 @@ export async function loginWithPin(page: Page, pin = OWNER.pin): Promise<void> {
   await expect(page.getByText('أدخل الرقم السري')).toBeVisible()
   await page.keyboard.type(pin)
   await page.keyboard.press('Enter')
+  // Wait for the signed-in shell before deep-linking anywhere.
+  await expect(page.getByRole('link', { name: 'الإعدادات' })).toBeVisible()
 }
 
 export async function createProduct(page: Page, name: string, price: string, stock: string, barcode?: string): Promise<void> {

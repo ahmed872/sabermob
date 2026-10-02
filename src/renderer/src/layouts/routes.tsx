@@ -22,6 +22,8 @@ const OffersPage = lazy(() => import('../features/offers/offers-page'))
 const RepairsPage = lazy(() => import('../features/repairs/repairs-page'))
 const RepairNewPage = lazy(() => import('../features/repairs/repair-new'))
 const RepairDetailPage = lazy(() => import('../features/repairs/repair-detail'))
+const DashboardPage = lazy(() => import('../features/dashboard/dashboard-page'))
+const ReportsPage = lazy(() => import('../features/reports/reports-page'))
 
 export const ROUTES: AppRoute[] = [
   { path: '/pos', component: PosPage, permission: ['create_sale'] },
@@ -40,15 +42,21 @@ export const ROUTES: AppRoute[] = [
   { path: '/suppliers', component: SuppliersPage, permission: ['manage_suppliers', 'view_supplier_balances', 'manage_purchases'] },
   { path: '/suppliers/purchases/new', component: PurchaseEditorPage, permission: ['manage_purchases'] },
   { path: '/suppliers/:id', component: SupplierDetailPage, permission: ['manage_suppliers', 'view_supplier_balances', 'manage_purchases'] },
+  { path: '/reports', component: ReportsPage, permission: ['view_reports', 'view_profit', 'view_supplier_balances'] },
+  { path: '/reports/:tab', component: ReportsPage, permission: ['view_reports', 'view_profit', 'view_supplier_balances'] },
+  // Data on the dashboard is filtered server-side by permission.
+  { path: '/dashboard', component: DashboardPage },
   { path: '/settings', component: SettingsPage },
   { path: '/settings/:section', component: SettingsPage }
 ]
 
 /** Where to land after sign-in, based on what the user may do. */
 export function DEFAULT_ROUTE(can: (p: PermissionKey[]) => boolean): string {
+  // Owners and managers start on the dashboard; cashiers go straight to selling.
+  if (can(['view_reports'])) return '/dashboard'
   for (const r of ROUTES) {
     if (r.path.includes(':')) continue
-    if (!r.permission || can(r.permission)) return r.path
+    if (r.permission && can(r.permission)) return r.path
   }
-  return '/settings'
+  return '/dashboard'
 }

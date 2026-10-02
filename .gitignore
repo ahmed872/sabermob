@@ -14,3 +14,4 @@ src/main/database/generated/
 # Vendor license signing key — NEVER commit
 license-keys/
 .env
+*.tsbuildinfo
