@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "allowImportingTsExtensions": true, "lib": ["ES2023"], "types": ["node"], "module": "NodeNext", "moduleResolution": "NodeNext" },
+  "include": ["scripts/**/*.mts"]
+}

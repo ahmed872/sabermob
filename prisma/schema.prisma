@@ -1,0 +1,981 @@
+// Central Pro — local SQLite data model.
+//
+// Conventions (see docs/DATABASE.md):
+// - Primary keys are time-ordered UUIDv7 strings so records created on
+//   different installations never collide (future sync).
+// - Money is stored as INTEGER minor units (piasters for EGP). Rates
+//   (tax, discount) are INTEGER basis points (1400 = 14%). No floats.
+// - Syncable entities carry createdAt/updatedAt/deletedAt/version/deviceId.
+//   `version` is bumped on every update by the Prisma client extension.
+// - Financial records are never hard-deleted; they are voided/reversed.
+// - Balances (customer debt, supplier debt) are derived from ledgers.
+// - Enumerations are plain strings validated in the service layer
+//   (see src/shared/constants/enums.ts) to keep migrations simple.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/main/database/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ───────────────────────── Workspace / system ─────────────────────────
+
+model Device {
+  id         String   @id
+  name       String
+  platform   String
+  isCurrent  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+}
+
+model Setting {
+  key         String   @id
+  value       String // JSON encoded
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+}
+
+// Gap-free sequential document numbers (sale, invoice, repair, ...).
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model License {
+  id              String    @id @default(uuid(7))
+  tier            String // FREE | BASIC | PROFESSIONAL | ENTERPRISE
+  licenseKey      String?
+  payload         String? // signed JSON payload
+  signature       String?
+  issuedTo        String?
+  expiresAt       DateTime?
+  lastValidatedAt DateTime?
+  installedAt     DateTime  @default(now())
+  isActive        Boolean   @default(true)
+}
+
+model BackupRecord {
+  id         String    @id @default(uuid(7))
+  kind       String // AUTO | MANUAL | PRE_MIGRATION | PRE_RESTORE | EXPORT
+  filePath   String
+  sizeBytes  Int       @default(0)
+  sha256     String?
+  status     String // SUCCESS | FAILED
+  verifiedAt DateTime?
+  error      String?
+  createdAt  DateTime  @default(now())
+  createdBy  String?
+}
+
+model SyncQueue {
+  id        String    @id @default(uuid(7))
+  entity    String
+  entityId  String
+  operation String // UPSERT | DELETE
+  version   Int
+  payload   String?
+  attempts  Int       @default(0)
+  lastError String?
+  createdAt DateTime  @default(now())
+  syncedAt  DateTime?
+
+  @@index([syncedAt, createdAt])
+}
+
+model SyncConflict {
+  id           String    @id @default(uuid(7))
+  entity       String
+  entityId     String
+  localData    String
+  remoteData   String
+  resolution   String? // LOCAL | REMOTE | MERGED
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+}
+
+// ───────────────────────── Users & security ─────────────────────────
+
+model Role {
+  id            String           @id @default(uuid(7))
+  name          String
+  systemKey     String?          @unique // OWNER, MANAGER, ... for built-in roles
+  description   String?
+  maxDiscountBp Int              @default(0) // max discount without override
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  version       Int              @default(1)
+  deviceId      String           @default("")
+  permissions   RolePermission[]
+  users         User[]
+}
+
+model Permission {
+  key   String           @id
+  group String
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId        String
+  permissionKey String
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@id([roleId, permissionKey])
+}
+
+model User {
+  id             String     @id @default(uuid(7))
+  username       String     @unique
+  fullName       String
+  phone          String?
+  passwordHash   String
+  pinHash        String?
+  roleId         String
+  role           Role       @relation(fields: [roleId], references: [id])
+  isActive       Boolean    @default(true)
+  language       String?
+  lastLoginAt    DateTime?
+  failedAttempts Int        @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+  version        Int        @default(1)
+  deviceId       String     @default("")
+  sessions       Session[]
+  sales          Sale[]
+  repairsAsTech  Repair[]   @relation("RepairTechnician")
+  shifts         Shift[]    @relation("ShiftOpenedBy")
+  auditLogs      AuditLog[]
+}
+
+model Session {
+  id        String    @id @default(uuid(7))
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  method    String // PASSWORD | PIN
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  endReason String? // LOGOUT | SWITCH | TIMEOUT | APP_EXIT | CRASH_RECOVERY
+  deviceId  String    @default("")
+
+  @@index([userId, startedAt])
+}
+
+// Append-only. Never updated or deleted by the application.
+model AuditLog {
+  id        String   @id @default(uuid(7))
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  String? // JSON
+  deviceId  String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+}
+
+// ───────────────────────── Customers ─────────────────────────
+
+model Customer {
+  id             String              @id @default(uuid(7))
+  name           String
+  phone          String?
+  phone2         String?
+  address        String?
+  notes          String?
+  type           String              @default("REGULAR") // REGULAR | VIP | WHOLESALE
+  creditLimit    Int? // minor units; null = no limit
+  loyaltyPoints  Int                 @default(0)
+  searchText     String              @default("")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?
+  version        Int                 @default(1)
+  deviceId       String              @default("")
+  tags           CustomerTag[]
+  ledger         CustomerLedger[]
+  loyalty        LoyaltyTransaction[]
+  sales          Sale[]
+  repairs        Repair[]
+  payments       Payment[]
+  quotations     Quotation[]
+
+  @@index([phone])
+  @@index([phone2])
+  @@index([name])
+}
+
+model CustomerTag {
+  id         String   @id @default(uuid(7))
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag        String
+
+  @@unique([customerId, tag])
+}
+
+// Positive amount = customer owes the shop more. Balance = SUM(amount).
+model CustomerLedger {
+  id         String   @id @default(uuid(7))
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  type       String // SALE_CREDIT | PAYMENT | REFUND | REPAIR_CREDIT | ADJUSTMENT | OPENING
+  amount     Int
+  refType    String?
+  refId      String?
+  note       String?
+  userId     String?
+  createdAt  DateTime @default(now())
+  deviceId   String   @default("")
+
+  @@index([customerId, createdAt])
+}
+
+model LoyaltyTransaction {
+  id         String   @id @default(uuid(7))
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  points     Int
+  reason     String // EARN | REDEEM | ADJUST | REVERSAL
+  refId      String?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+
+// ───────────────────────── Catalog ─────────────────────────
+
+model Brand {
+  id        String        @id @default(uuid(7))
+  name      String
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  deletedAt DateTime?
+  version   Int           @default(1)
+  deviceId  String        @default("")
+  models    DeviceModel[]
+  products  Product[]
+}
+
+model DeviceModel {
+  id        String    @id @default(uuid(7))
+  brandId   String
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  name      String
+  aliases   String? // extra search terms, e.g. "SM-A556 A55 5G"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  version   Int       @default(1)
+  deviceId  String    @default("")
+  products  Product[]
+
+  @@index([brandId])
+}
+
+model Category {
+  id           String     @id @default(uuid(7))
+  name         String
+  kind         String     @default("ACCESSORY") // ACCESSORY | DEVICE | SERVICE | PART | OTHER
+  parentId     String?
+  parent       Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[] @relation("CategoryTree")
+  color        String?
+  icon         String?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+  version      Int        @default(1)
+  deviceId     String     @default("")
+  products     Product[]
+}
+
+model Product {
+  id            String           @id @default(uuid(7))
+  type          String // ACCESSORY | DEVICE | USED_DEVICE | SERVICE | PART | CUSTOM
+  name          String
+  altName       String? // second-language name used for search/receipts
+  categoryId    String?
+  category      Category?        @relation(fields: [categoryId], references: [id])
+  brandId       String?
+  brand         Brand?           @relation(fields: [brandId], references: [id])
+  deviceModelId String?
+  deviceModel   DeviceModel?     @relation(fields: [deviceModelId], references: [id])
+  supplierId    String?
+  supplier      Supplier?        @relation(fields: [supplierId], references: [id])
+  taxBp         Int? // null = use default tax rate from settings
+  trackStock    Boolean          @default(true)
+  trackSerials  Boolean          @default(false) // IMEI/serial per unit
+  warrantyDays  Int?
+  isFavorite    Boolean          @default(false)
+  isActive      Boolean          @default(true)
+  notes         String?
+  imagePath     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  version       Int              @default(1)
+  deviceId      String           @default("")
+  variants      ProductVariant[]
+  offerLinks    OfferProduct[]
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([deviceModelId])
+}
+
+// The sellable unit. Every product has at least one (default) variant;
+// stock, prices and barcodes live here so all flows use one code path.
+model ProductVariant {
+  id             String          @id @default(uuid(7))
+  productId      String
+  product        Product         @relation(fields: [productId], references: [id])
+  name           String? // e.g. "Black", "128GB" (null for default variant)
+  isDefault      Boolean         @default(false)
+  sku            String?         @unique
+  color          String?
+  material       String?
+  size           String?
+  storage        String?
+  ram            String?
+  costPrice      Int             @default(0) // weighted average cost
+  sellPrice      Int             @default(0)
+  minPrice       Int? // never sell below (without override)
+  wholesalePrice Int?
+  stockQty       Int             @default(0) // cached; source of truth = StockMovement
+  minStock       Int             @default(0)
+  maxStock       Int?
+  searchText     String          @default("") // normalized ar/en search index
+  lastSoldAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+  version        Int             @default(1)
+  deviceId       String          @default("")
+  barcodes       Barcode[]
+  movements      StockMovement[]
+  saleItems      SaleItem[]
+  serials        SerialItem[]
+  purchaseItems  PurchaseItem[]
+  repairParts    RepairPart[]
+
+  @@index([productId])
+  @@index([searchText])
+  @@index([stockQty])
+}
+
+model Barcode {
+  id        String         @id @default(uuid(7))
+  code      String         @unique
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  isInternal Boolean       @default(false)
+  createdAt DateTime       @default(now())
+
+  @@index([variantId])
+}
+
+// Individually tracked units (phones) identified by IMEI / serial.
+model SerialItem {
+  id         String         @id @default(uuid(7))
+  variantId  String
+  variant    ProductVariant @relation(fields: [variantId], references: [id])
+  serial     String         @unique // IMEI or serial number
+  status     String         @default("IN_STOCK") // IN_STOCK | SOLD | RETURNED_TO_SUPPLIER | DEFECTIVE
+  costPrice  Int            @default(0)
+  saleItemId String?
+  notes      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  version    Int            @default(1)
+  deviceId   String         @default("")
+
+  @@index([variantId, status])
+}
+
+// Every stock change produces exactly one row. Never updated or deleted.
+model StockMovement {
+  id           String         @id @default(uuid(7))
+  variantId    String
+  variant      ProductVariant @relation(fields: [variantId], references: [id])
+  type         String // OPENING | PURCHASE | SALE | SALE_RETURN | PURCHASE_RETURN | ADJUSTMENT | DAMAGED | LOST | REPAIR_USE | REPAIR_RETURN | CORRECTION
+  qty          Int // signed
+  unitCost     Int            @default(0)
+  balanceAfter Int
+  refType      String?
+  refId        String?
+  reason       String?
+  userId       String?
+  createdAt    DateTime       @default(now())
+  deviceId     String         @default("")
+
+  @@index([variantId, createdAt])
+  @@index([refType, refId])
+  @@index([createdAt])
+}
+
+model StockAdjustment {
+  id        String   @id @default(uuid(7))
+  number    String   @unique
+  type      String // COUNT | DAMAGED | LOST | CORRECTION | OPENING
+  note      String?
+  userId    String
+  createdAt DateTime @default(now())
+  deviceId  String   @default("")
+}
+
+// ───────────────────────── Suppliers & purchasing ─────────────────────────
+
+model Supplier {
+  id          String           @id @default(uuid(7))
+  name        String
+  companyName String?
+  phone       String?
+  phone2      String?
+  address     String?
+  notes       String?
+  searchText  String           @default("")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+  version     Int              @default(1)
+  deviceId    String           @default("")
+  products    Product[]
+  ledger      SupplierLedger[]
+  purchases   PurchaseOrder[]
+  payments    SupplierPayment[]
+}
+
+// Positive amount = we owe the supplier more. Negative balance = supplier owes us.
+model SupplierLedger {
+  id         String   @id @default(uuid(7))
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  type       String // OPENING | PURCHASE | PAYMENT | RETURN | ADJUSTMENT | PAYMENT_VOID
+  amount     Int
+  refType    String?
+  refId      String?
+  note       String?
+  userId     String?
+  createdAt  DateTime @default(now())
+  deviceId   String   @default("")
+
+  @@index([supplierId, createdAt])
+}
+
+model PurchaseOrder {
+  id                String            @id @default(uuid(7))
+  number            String            @unique
+  supplierId        String
+  supplier          Supplier          @relation(fields: [supplierId], references: [id])
+  status            String // DRAFT | ORDERED | PARTIAL | RECEIVED | CANCELLED
+  supplierInvoiceNo String?
+  subtotal          Int               @default(0)
+  discount          Int               @default(0)
+  tax               Int               @default(0)
+  total             Int               @default(0) // value of received goods (what we owe)
+  notes             String?
+  userId            String
+  orderedAt         DateTime          @default(now())
+  receivedAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  version           Int               @default(1)
+  deviceId          String            @default("")
+  items             PurchaseItem[]
+  receipts          PurchaseReceipt[]
+  payments          SupplierPayment[]
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseItem {
+  id              String         @id @default(uuid(7))
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  qtyOrdered      Int
+  qtyReceived     Int            @default(0)
+  qtyDamaged      Int            @default(0)
+  qtyReturned     Int            @default(0)
+  unitCost        Int
+
+  @@index([purchaseOrderId])
+}
+
+model PurchaseReceipt {
+  id              String                @id @default(uuid(7))
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id])
+  note            String?
+  userId          String
+  createdAt       DateTime              @default(now())
+  items           PurchaseReceiptItem[]
+}
+
+model PurchaseReceiptItem {
+  id             String          @id @default(uuid(7))
+  receiptId      String
+  receipt        PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  purchaseItemId String
+  qtyReceived    Int
+  qtyDamaged     Int             @default(0)
+  unitCost       Int
+}
+
+model PurchaseReturn {
+  id              String               @id @default(uuid(7))
+  number          String               @unique
+  supplierId      String
+  purchaseOrderId String?
+  total           Int
+  note            String?
+  userId          String
+  createdAt       DateTime             @default(now())
+  items           PurchaseReturnItem[]
+}
+
+model PurchaseReturnItem {
+  id        String         @id @default(uuid(7))
+  returnId  String
+  return    PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  variantId String
+  qty       Int
+  unitCost  Int
+}
+
+model SupplierPayment {
+  id              String         @id @default(uuid(7))
+  supplierId      String
+  supplier        Supplier       @relation(fields: [supplierId], references: [id])
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  direction       String         @default("OUT") // OUT = we paid supplier, IN = supplier refunded us
+  amount          Int
+  method          String // CASH | CARD | WALLET | TRANSFER
+  reference       String?
+  note            String?
+  shiftId         String?
+  userId          String
+  createdAt       DateTime       @default(now())
+  voidedAt        DateTime?
+  voidedById      String?
+  voidReason      String?
+  deviceId        String         @default("")
+
+  @@index([supplierId])
+}
+
+// ───────────────────────── Sales ─────────────────────────
+
+model Shift {
+  id            String         @id @default(uuid(7))
+  number        String         @unique
+  openedById    String
+  openedBy      User           @relation("ShiftOpenedBy", fields: [openedById], references: [id])
+  openedAt      DateTime       @default(now())
+  openingCash   Int
+  closedAt      DateTime?
+  closedById    String?
+  expectedCash  Int?
+  countedCash   Int?
+  difference    Int?
+  note          String?
+  status        String         @default("OPEN") // OPEN | CLOSED
+  reviewedById  String?
+  reviewedAt    DateTime?
+  deviceId      String         @default("")
+  sales         Sale[]
+  cashMovements CashMovement[]
+
+  @@index([status])
+}
+
+model CashMovement {
+  id        String   @id @default(uuid(7))
+  shiftId   String
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+  type      String // PAY_IN | PAY_OUT
+  amount    Int
+  reason    String
+  userId    String
+  createdAt DateTime @default(now())
+}
+
+model Sale {
+  id               String     @id @default(uuid(7))
+  number           String     @unique // receipt number, always assigned
+  invoiceNumber    String?    @unique // only for formal invoices
+  kind             String     @default("QUICK") // QUICK | INVOICE
+  status           String     @default("COMPLETED") // COMPLETED | PARTIALLY_REFUNDED | REFUNDED | VOIDED
+  customerId       String?
+  customer         Customer?  @relation(fields: [customerId], references: [id])
+  userId           String
+  user             User       @relation(fields: [userId], references: [id])
+  shiftId          String?
+  shift            Shift?     @relation(fields: [shiftId], references: [id])
+  pricesIncludeTax Boolean
+  subtotal         Int // sum of qty * unitPrice
+  discountTotal    Int // item + cart discounts
+  taxTotal         Int
+  total            Int // amount the customer must pay
+  paidTotal        Int // money received (excluding change)
+  changeDue        Int        @default(0)
+  creditAmount     Int        @default(0) // added to customer debt
+  costTotal        Int
+  refundedTotal    Int        @default(0)
+  currency         String
+  note             String?
+  qrEnabled        Boolean    @default(false)
+  idempotencyKey   String     @unique // prevents duplicate sale on retry/crash
+  approvedById     String? // manager who authorized an override
+  voidedAt         DateTime?
+  voidedById       String?
+  voidReason       String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  version          Int        @default(1)
+  deviceId         String     @default("")
+  items            SaleItem[]
+  payments         Payment[]
+  refunds          Refund[]
+
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([userId, createdAt])
+  @@index([shiftId])
+}
+
+model SaleItem {
+  id          String          @id @default(uuid(7))
+  saleId      String
+  sale        Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+  productType String
+  name        String // snapshot at sale time
+  sku         String?
+  serial      String?
+  qty         Int
+  unitPrice   Int
+  unitCost    Int
+  discount    Int // total line discount incl. allocated cart discount
+  taxBp       Int
+  tax         Int
+  total       Int // line amount the customer pays
+  refundedQty Int             @default(0)
+  offerId     String?
+  warrantyDays Int?
+
+  @@index([saleId])
+  @@index([variantId])
+}
+
+// All money received or paid back to customers (sales, debt collection,
+// repair deposits). Negative amounts are refunds/cash returned.
+model Payment {
+  id         String    @id @default(uuid(7))
+  kind       String // SALE | DEBT_COLLECTION | REPAIR | REFUND
+  method     String // CASH | CARD | WALLET | TRANSFER
+  amount     Int
+  reference  String?
+  saleId     String?
+  sale       Sale?     @relation(fields: [saleId], references: [id])
+  repairId   String?
+  repair     Repair?   @relation(fields: [repairId], references: [id])
+  refundId   String?
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  shiftId    String?
+  userId     String
+  createdAt  DateTime  @default(now())
+  deviceId   String    @default("")
+
+  @@index([saleId])
+  @@index([repairId])
+  @@index([createdAt])
+  @@index([shiftId])
+}
+
+model Refund {
+  id          String       @id @default(uuid(7))
+  number      String       @unique
+  saleId      String
+  sale        Sale         @relation(fields: [saleId], references: [id])
+  reason      String?
+  total       Int
+  method      String // CASH | CARD | WALLET | TRANSFER | CREDIT
+  userId      String
+  approvedById String?
+  shiftId     String?
+  createdAt   DateTime     @default(now())
+  deviceId    String       @default("")
+  items       RefundItem[]
+
+  @@index([saleId])
+  @@index([createdAt])
+}
+
+model RefundItem {
+  id         String  @id @default(uuid(7))
+  refundId   String
+  refund     Refund  @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  saleItemId String
+  qty        Int
+  amount     Int
+  restock    Boolean @default(true)
+}
+
+// Suspended carts survive app restarts.
+model HeldCart {
+  id         String   @id @default(uuid(7))
+  label      String
+  userId     String
+  customerId String?
+  payload    String // JSON cart snapshot
+  total      Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model Quotation {
+  id         String          @id @default(uuid(7))
+  number     String          @unique
+  customerId String?
+  customer   Customer?       @relation(fields: [customerId], references: [id])
+  status     String          @default("OPEN") // OPEN | ACCEPTED | EXPIRED | CANCELLED | CONVERTED
+  validUntil DateTime?
+  subtotal   Int
+  discountTotal Int
+  taxTotal   Int
+  total      Int
+  note       String?
+  saleId     String?
+  userId     String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  version    Int             @default(1)
+  deviceId   String          @default("")
+  items      QuotationItem[]
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid(7))
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  variantId   String?
+  name        String
+  qty         Int
+  unitPrice   Int
+  discount    Int       @default(0)
+  taxBp       Int
+  tax         Int
+  total       Int
+}
+
+// ───────────────────────── Repairs ─────────────────────────
+
+model RepairStatus {
+  id        String   @id @default(uuid(7))
+  key       String   @unique // RECEIVED, DIAGNOSING, ... or CUSTOM_xxx
+  name      String
+  nameAr    String
+  color     String   @default("#64748b")
+  sortOrder Int      @default(0)
+  isFinal   Boolean  @default(false) // DELIVERED / CANCELLED
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  repairs   Repair[]
+}
+
+model Repair {
+  id                 String                @id @default(uuid(7))
+  number             String                @unique // RP-1042
+  customerId         String?
+  customer           Customer?             @relation(fields: [customerId], references: [id])
+  customerName       String
+  customerPhone      String
+  deviceBrand        String?
+  deviceModel        String
+  imei               String?
+  serialNumber       String?
+  deviceColor        String?
+  deviceCondition    String?
+  devicePasscodeEnc  String? // AES-GCM encrypted; shown only with permission
+  complaint          String
+  diagnosis          String?
+  notes              String?
+  accessories        String                @default("[]") // JSON array of keys
+  statusId           String
+  status             RepairStatus          @relation(fields: [statusId], references: [id])
+  technicianId       String?
+  technician         User?                 @relation("RepairTechnician", fields: [technicianId], references: [id])
+  serviceVariantId   String? // repair type (service product) for default warranty/price
+  estimatedPrice     Int                   @default(0)
+  laborPrice         Int                   @default(0)
+  finalPrice         Int? // total charged = labor + parts (set when priced)
+  paidTotal          Int                   @default(0) // cached from Payment rows
+  creditAmount       Int                   @default(0) // amount moved to customer debt at delivery
+  expectedAt         DateTime?
+  receivedAt         DateTime              @default(now())
+  deliveredAt        DateTime?
+  warrantyDays       Int                   @default(0)
+  warrantyUntil      DateTime?
+  parentRepairId     String? // previous repair when this is a warranty return
+  isWarrantyClaim    Boolean               @default(false)
+  receiveSignature   String? // relative path in app data
+  deliverySignature  String?
+  userId             String
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  deletedAt          DateTime?
+  deletedById        String?
+  version            Int                   @default(1)
+  deviceId           String                @default("")
+  statusHistory      RepairStatusHistory[]
+  parts              RepairPart[]
+  photos             RepairPhoto[]
+  payments           Payment[]
+
+  @@index([statusId])
+  @@index([customerPhone])
+  @@index([imei])
+  @@index([technicianId])
+  @@index([createdAt])
+}
+
+model RepairStatusHistory {
+  id           String   @id @default(uuid(7))
+  repairId     String
+  repair       Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  fromStatusId String?
+  toStatusId   String
+  note         String?
+  userId       String
+  createdAt    DateTime @default(now())
+
+  @@index([repairId])
+}
+
+model RepairPart {
+  id         String          @id @default(uuid(7))
+  repairId   String
+  repair     Repair          @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  variantId  String?
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  name       String
+  qty        Int
+  unitCost   Int
+  unitPrice  Int
+  returnedAt DateTime? // part returned to stock (cancelled repair / wrong part)
+  userId     String
+  createdAt  DateTime        @default(now())
+
+  @@index([repairId])
+}
+
+model RepairPhoto {
+  id        String   @id @default(uuid(7))
+  repairId  String
+  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  kind      String // BEFORE | AFTER | DAMAGE
+  filePath  String // relative to app data "media" directory
+  note      String?
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@index([repairId])
+}
+
+// ───────────────────────── Smart offers ─────────────────────────
+
+model Offer {
+  id             String            @id @default(uuid(7))
+  name           String
+  description    String?
+  type           String // PERCENT | FIXED | BUNDLE | BUY_X_GET_Y | QTY_DISCOUNT | CART_THRESHOLD | CLEARANCE | CROSS_SELL
+  isActive       Boolean           @default(true)
+  autoApply      Boolean           @default(false) // apply silently vs. suggest to cashier
+  priority       Int               @default(0)
+  discountBp     Int? // percentage discount
+  discountAmount Int? // fixed discount per unit
+  bundlePrice    Int? // fixed price for the target item(s) in a bundle
+  buyQty         Int?
+  getQty         Int?
+  minQty         Int?
+  minCartTotal   Int?
+  customerType   String? // REGULAR | VIP | WHOLESALE
+  daysOfWeek     String? // "0,6" (0 = Sunday)
+  hourFrom       Int?
+  hourTo         Int?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  maxUses        Int?
+  usageCount     Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+  version        Int               @default(1)
+  deviceId       String            @default("")
+  products       OfferProduct[]
+  events         OfferEvent[]
+}
+
+model OfferProduct {
+  id         String   @id @default(uuid(7))
+  offerId    String
+  offer      Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  role       String // TRIGGER | TARGET
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id])
+  categoryId String?
+
+  @@index([offerId])
+  @@index([productId])
+}
+
+// Impressions and outcomes, for offer analytics (a.k.a. OfferConversions).
+model OfferEvent {
+  id             String   @id @default(uuid(7))
+  offerId        String?
+  offer          Offer?   @relation(fields: [offerId], references: [id])
+  source         String // OFFER | AFFINITY | CLEARANCE | THRESHOLD
+  event          String // SHOWN | ACCEPTED | DISMISSED | CONVERTED
+  productId      String?
+  saleId         String?
+  userId         String?
+  discountAmount Int      @default(0)
+  revenue        Int      @default(0)
+  profit         Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([offerId, event])
+  @@index([createdAt])
+}
+
+// Learned "bought together" relationships between products.
+model ProductAffinity {
+  productA  String
+  productB  String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([productA, productB])
+  @@index([productA, count])
+}
