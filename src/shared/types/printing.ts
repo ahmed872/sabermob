@@ -29,7 +29,7 @@ export interface PrintStore {
 
 export type PrintDocument =
   | { type: 'receipt'; paper: PaperSize; store: PrintStore; sale: SaleDto; qr: string | null; reprint: boolean }
-  | { type: 'invoice'; paper: 'A4'; store: PrintStore; sale: SaleDto; qr: string | null; reprint: boolean }
+  | { type: 'invoice'; paper: PaperSize; store: PrintStore; sale: SaleDto; qr: string | null; reprint: boolean }
   | { type: 'repairTicket'; paper: PaperSize; store: PrintStore; repair: RepairDto; qr: string | null; terms: string }
   | { type: 'shiftReport'; paper: PaperSize; store: PrintStore; shift: ShiftSummary }
   | {
@@ -43,7 +43,7 @@ export type PrintDocument =
   | { type: 'test'; paper: PaperSize; store: PrintStore }
 
 export type PrintRequest =
-  | { type: 'receipt' | 'invoice'; saleId: string; reprint?: boolean }
+  | { type: 'receipt' | 'invoice'; saleId: string; reprint?: boolean; paper?: PaperSize }
   | { type: 'repairTicket'; repairId: string }
   | { type: 'shiftReport'; shiftId: string }
   | { type: 'labels'; items: Array<{ variantId: string; qty: number }> }

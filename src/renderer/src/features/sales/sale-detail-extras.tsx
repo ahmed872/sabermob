@@ -21,6 +21,9 @@ export function SaleDetailExtras({ sale }: { sale: SaleDto }) {
       <Button variant="outline" onClick={() => setReq({ type: 'invoice', saleId: sale.id, reprint: true })}>
         <FileText /> {t('print.printInvoice')}
       </Button>
+      <Button variant="ghost" onClick={() => setReq({ type: 'invoice', saleId: sale.id, reprint: true, paper: 'A4' })}>
+        {t('print.a4')}
+      </Button>
       {req ? <PrintPreviewDialog request={req} onClose={() => setReq(null)} /> : null}
     </>
   )

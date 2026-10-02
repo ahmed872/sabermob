@@ -23,6 +23,7 @@ import { RepairService } from '../services/repair-service'
 import { MediaService } from '../services/media-service'
 import { SecretsService } from '../security/secrets'
 import { QrService } from '../services/qr-service'
+import { OfferService } from '../services/offer-service'
 
 export interface AppContextOptions {
   rootDir: string
@@ -63,6 +64,7 @@ export class AppContext {
   media!: MediaService
   secrets!: SecretsService
   qr!: QrService
+  offers!: OfferService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -104,6 +106,8 @@ export class AppContext {
     await this.secrets.init()
     this.media = new MediaService(this.paths.media)
     this.qr = new QrService(this.db, this.settings, this.secrets)
+    this.offers = new OfferService(this.db, this.settings, this.audit, this.now)
+    this.sales.offers = this.offers
     this.repairs = new RepairService(this.db, this.settings, this.audit, this.shifts, this.secrets, this.media, this.now)
 
     await this.bootstrap.ensureSeed(o.deviceName, o.platformName)

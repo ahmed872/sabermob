@@ -53,6 +53,8 @@ export const settingsSchemas = {
   }),
   printing: z.object({
     receiptPaper: z.enum(['58mm', '80mm', 'A4']).default('80mm'),
+    /** formal invoices: thermal paper by default; A4 only if the shop wants it */
+    invoicePaper: z.enum(['58mm', '80mm', 'A4']).default('80mm'),
     receiptPrinter: z.string().nullable().default(null),
     a4Printer: z.string().nullable().default(null),
     labelPrinter: z.string().nullable().default(null),

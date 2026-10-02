@@ -97,7 +97,7 @@ function SaleTotals({ sale, store }: { sale: SaleDto; store: PrintStore }) {
   )
 }
 
-function Receipt({ doc }: { doc: Extract<PrintDocument, { type: 'receipt' }> }) {
+function Receipt({ doc, formal }: { doc: Extract<PrintDocument, { type: 'receipt' }>; formal?: boolean }) {
   const { t } = useTranslation()
   const { sale, store } = doc
   const f = useFmt(store)
@@ -107,10 +107,12 @@ function Receipt({ doc }: { doc: Extract<PrintDocument, { type: 'receipt' }> }) 
       <Dash />
       {doc.reprint ? <p className="text-center font-extrabold">*** {t('print.reprint')} ***</p> : null}
       {sale.status === 'VOIDED' ? <p className="text-center font-extrabold">*** {t('print.voided')} ***</p> : null}
+      {formal ? <p className="text-center text-[1.15em] font-extrabold">{sale.taxTotal > 0 ? t('print.taxInvoice') : t('print.invoice')}</p> : null}
       <KV k={sale.invoiceNumber ? t('print.invoice') : t('print.receipt')} v={<span dir="ltr">{sale.invoiceNumber ?? sale.number}</span>} bold />
       <KV k={t('print.date')} v={f.date(sale.createdAt)} />
       {store.showCashier ? <KV k={t('print.cashier')} v={sale.cashierName} /> : null}
       {sale.customer ? <KV k={t('print.customer')} v={sale.customer.name} /> : null}
+      {formal && sale.customer?.phone ? <KV k={t('print.phone')} v={<span dir="ltr">{sale.customer.phone}</span>} /> : null}
       <Dash />
       {sale.items.map((i) => (
         <div key={i.id} className="mb-1">
@@ -140,6 +142,8 @@ function Invoice({ doc }: { doc: Extract<PrintDocument, { type: 'invoice' }> }) 
   const { t } = useTranslation()
   const { sale, store } = doc
   const f = useFmt(store)
+  // Small shops print formal invoices on the same thermal roll as receipts.
+  if (doc.paper !== 'A4') return <Receipt doc={{ ...doc, type: 'receipt' }} formal />
   return (
     <div className="min-h-[1100px] w-[794px] bg-white p-10 text-[13px] leading-relaxed text-black">
       <div className="flex items-start justify-between gap-6 border-b-2 border-black pb-4">

@@ -11,7 +11,7 @@ import { buildDocument } from '../../printing/documents'
 import type { Printer } from '../../printing/printer'
 
 const requestSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.enum(['receipt', 'invoice']), saleId: z.string().min(1).max(64), reprint: z.boolean().optional() }),
+  z.object({ type: z.enum(['receipt', 'invoice']), saleId: z.string().min(1).max(64), reprint: z.boolean().optional(), paper: z.enum(['58mm', '80mm', 'A4']).optional() }),
   z.object({ type: z.literal('repairTicket'), repairId: z.string().min(1).max(64) }),
   z.object({ type: z.literal('shiftReport'), shiftId: z.string().min(1).max(64) }),
   z.object({ type: z.literal('labels'), items: z.array(z.object({ variantId: z.string().min(1).max(64), qty: z.number().int().min(1).max(500) })).min(1).max(200) }),
@@ -37,7 +37,7 @@ function check(actor: Actor, req: PrintRequest): void {
 function printerFor(app: AppContext, req: PrintRequest): string | null {
   const p = app.settings.get('printing')
   if (req.type === 'labels') return p.labelPrinter
-  if (req.type === 'invoice') return p.a4Printer
+  if (req.type === 'invoice') return (req.paper ?? p.invoicePaper) === 'A4' ? p.a4Printer : p.receiptPrinter
   if (req.type === 'test' && req.paper === 'A4') return p.a4Printer
   return p.receiptPaper === 'A4' ? p.a4Printer : p.receiptPrinter
 }

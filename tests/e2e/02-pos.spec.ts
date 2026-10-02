@@ -34,10 +34,10 @@ test('POS: open shift → scan → pay cash with change → sale in history, sto
     await expect(page.getByText('تم البيع')).toBeVisible()
     await expect(page.getByText('الباقي للعميل')).toBeVisible()
     await page.screenshot({ path: 'test-results/shots/pos-done.png' })
-    // A4 invoice preview + PDF rendered by the hidden print window
-    await page.getByRole('button', { name: 'فاتورة A4' }).click()
+    // Thermal receipt preview + PDF rendered by the hidden print window
+    await page.getByRole('button', { name: 'معاينة' }).click()
     await expect(page.getByText('سنترال الأمل').last()).toBeVisible()
-    await page.screenshot({ path: 'test-results/shots/invoice-preview.png' })
+    await page.screenshot({ path: 'test-results/shots/receipt-preview.png' })
     await page.getByRole('button', { name: 'حفظ PDF' }).click()
     await expect.poll(() => existsSync(`${dataDir}/S-000001.pdf`), { timeout: 20_000 }).toBe(true)
     expect(readFileSync(`${dataDir}/S-000001.pdf`).subarray(0, 4).toString()).toBe('%PDF')

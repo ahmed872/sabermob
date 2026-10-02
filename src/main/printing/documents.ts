@@ -53,7 +53,7 @@ export async function buildDocument(ctx: AppContext, req: PrintRequest, actor: A
       const qr = wantQr ? await ctx.qr.dataUrl('S', sale.invoiceNumber ?? sale.number) : null
       if (req.reprint) await ctx.sales.logReprint(sale.id, actor)
       return req.type === 'invoice'
-        ? { type: 'invoice', paper: 'A4', store, sale, qr, reprint: !!req.reprint }
+        ? { type: 'invoice', paper: req.paper ?? ctx.settings.get('printing').invoicePaper, store, sale, qr, reprint: !!req.reprint }
         : { type: 'receipt', paper, store, sale, qr, reprint: !!req.reprint }
     }
     case 'repairTicket': {

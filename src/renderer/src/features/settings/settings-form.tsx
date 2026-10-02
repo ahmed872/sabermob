@@ -64,6 +64,7 @@ export function useSpecs(): Partial<Record<SettingsGroup, Spec[]>> {
       ],
       printing: [
         { key: 'receiptPaper', type: 'select', options: ['58mm', '80mm', 'A4'].map((v) => ({ value: v, label: v })) },
+        { key: 'invoicePaper', type: 'select', options: ['58mm', '80mm', 'A4'].map((v) => ({ value: v, label: v })) },
         { key: 'receiptPrinter', type: 'printer' },
         { key: 'a4Printer', type: 'printer' },
         { key: 'labelPrinter', type: 'printer' },
