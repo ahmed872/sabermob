@@ -79,5 +79,10 @@
     "vite": "7.3.6",
     "vitest": "5.0.3",
     "zustand": "5.0.15"
+  },
+  "overrides": {
+    "@prisma/adapter-better-sqlite3": {
+      "better-sqlite3": "$better-sqlite3"
+    }
   }
 }

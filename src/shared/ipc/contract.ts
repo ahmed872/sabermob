@@ -49,6 +49,7 @@ export interface CoreContract {
   'system.info': { in: Empty; out: SystemInfo }
   'system.onboard': { in: OnboardingInput; out: { ok: true } }
   'system.openDataFolder': { in: Empty; out: { ok: true } }
+  'system.printers': { in: Empty; out: Array<{ name: string; displayName: string; isDefault: boolean }> }
   // license
   'license.state': { in: Empty; out: LicenseState }
   'license.activate': { in: ActivateInput; out: LicenseState }

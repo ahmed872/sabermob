@@ -33,6 +33,7 @@ export interface CoreHandlerDeps {
   appVersion: string
   platform: string
   openPath: (path: string) => Promise<void>
+  listPrinters: () => Promise<Array<{ name: string; displayName: string; isDefault: boolean }>>
 }
 
 const canCost = (a: Actor | null) => !!a?.permissions.has('view_cost')
@@ -75,6 +76,8 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
     await deps.openPath(app.paths.root)
     return { ok: true as const }
   })
+
+  r.handle('system.printers', { input: empty, public: true, allowUnlicensed: true, skipGate: true }, () => deps.listPrinters())
 
   // ───────────── license ─────────────
   r.handle('license.state', { input: empty, public: true, allowUnlicensed: true }, (_i, { app }) => app.license.state())

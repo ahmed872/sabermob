@@ -1,0 +1,126 @@
+@import 'tailwindcss';
+@import '@fontsource/cairo/400.css';
+@import '@fontsource/cairo/500.css';
+@import '@fontsource/cairo/600.css';
+@import '@fontsource/cairo/700.css';
+@import '@fontsource/cairo/800.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. Surfaces are layered (bg → surface → raised) so screens
+ * read as a desktop application, not a web admin panel.
+ */
+@theme {
+  --font-sans: 'Cairo', 'Segoe UI', system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-active: var(--sidebar-active);
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -8px rgb(15 23 42 / 0.10);
+  --shadow-pop: 0 12px 40px -12px rgb(15 23 42 / 0.35);
+  --animate-in: fade-in 140ms ease-out;
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.99); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+:root {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: #eef1f6;
+  --line: #e3e8ef;
+  --line-strong: #cfd6e1;
+  --fg: #0f172a;
+  --muted: #5b6577;
+  --subtle: #8a94a6;
+  --primary: #4338ca;
+  --primary-fg: #ffffff;
+  --primary-soft: #eceafd;
+  --success: #0f9d63;
+  --success-soft: #e3f6ee;
+  --warning: #c27803;
+  --warning-soft: #fdf3dc;
+  --danger: #d92d4b;
+  --danger-soft: #fde8ec;
+  --info: #0b7bc1;
+  --info-soft: #e2f1fb;
+  --sidebar: #101828;
+  --sidebar-fg: #c7cfdc;
+  --sidebar-active: #1d2939;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0b1120;
+  --surface: #111a2e;
+  --raised: #16213a;
+  --sunken: #0d1527;
+  --line: #22304a;
+  --line-strong: #31415f;
+  --fg: #e6ebf4;
+  --muted: #9aa6bb;
+  --subtle: #6b7891;
+  --primary: #7c7cff;
+  --primary-fg: #0b1020;
+  --primary-soft: #1f2450;
+  --success: #34d399;
+  --success-soft: #0f2e25;
+  --warning: #fbbf24;
+  --warning-soft: #33280d;
+  --danger: #fb7185;
+  --danger-soft: #3a1520;
+  --info: #38bdf8;
+  --info-soft: #0c2b3d;
+  --sidebar: #070c18;
+  --sidebar-fg: #a9b4c7;
+  --sidebar-active: #172238;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+input, textarea, [contenteditable], .selectable { user-select: text; }
+*:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+.tabular { font-variant-numeric: tabular-nums; }
+.no-drag { -webkit-app-region: no-drag; }
+input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a94a6' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+}
+[dir='rtl'] .select-chevron { background-position: left 10px center; }

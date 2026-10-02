@@ -103,6 +103,19 @@ export class AppContext {
     return deviceId
   }
 
+  /** Tasks that must run before the app exits (e.g. backup on exit). */
+  readonly shutdownTasks: Array<() => Promise<void>> = []
+
+  async onShutdown(): Promise<void> {
+    for (const task of this.shutdownTasks) {
+      try {
+        await task()
+      } catch (err) {
+        this.log.app.error('Shutdown task failed', { message: String(err) })
+      }
+    }
+  }
+
   async dispose(): Promise<void> {
     try {
       await this.auth?.shutdown()
