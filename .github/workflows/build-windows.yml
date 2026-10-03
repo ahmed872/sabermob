@@ -157,10 +157,15 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           if [[ "$GITHUB_REF" != refs/tags/v* ]]; then VERSION="$(node -p "require('./package.json').version")"; fi
           TAG="v$VERSION"
+          cp docs/manual/Central-Pro-User-Guide-AR.pdf release/
           EXE="$(ls release/Central-Pro-Setup-*.exe | head -1)"
           SHA="$(sha256sum "$EXE" | cut -d' ' -f1)"
+          WHATS_NEW=""
+          if [ -f "docs/release-notes/v$VERSION.md" ]; then WHATS_NEW="$(cat "docs/release-notes/v$VERSION.md")"; fi
           cat > notes.md <<NOTES
           ## سنترال برو $VERSION
+
+          $WHATS_NEW
 
           ### التثبيت
           1. حمّل **$(basename "$EXE")** من الملفات تحت.
@@ -169,6 +174,9 @@ jobs:
 
           ### التحديث من إصدار قديم
           شغّل المثبّت الجديد على نفس الجهاز. البيانات والإعدادات والتفعيل بيفضلوا زي ما هم، وقاعدة البيانات بتتحدث بعد نسخة احتياطية تلقائية.
+
+          ### كتيب الاستخدام
+          **Central-Pro-User-Guide-AR.pdf** — شرح مصوّر لكل شاشات البرنامج (عربي).
 
           ### التفعيل
           15 يوم تجربة. بعدها العميل يبعت **كود الطلب**، وتولّد المفتاح من **Actions ← توليد مفتاح تفعيل**.
