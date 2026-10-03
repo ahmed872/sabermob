@@ -101,7 +101,14 @@ switch (command) {
     const serial = opts.serial ? Number(opts.serial) : nextSerial()
     const issuedAt = new Date()
     const payload = encodePayload({ tier, machineId, issuedAt, validDays, serial })
-    const signature = sign(null, Buffer.from(signingMessage(payload)), loadPrivateKey(useDev))
+    const privateKey = loadPrivateKey(useDev)
+    if (!useDev) {
+      // A key signed by a different private key would never activate the shipped app.
+      const shipped = readFileSync(PUBLIC_KEY_TS, 'utf8').match(/`([\s\S]+)`/)![1]!.trim()
+      const mine = (createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }) as string).trim()
+      if (shipped !== mine) fail('This private key does not match the public key built into the app (src/main/license/public-key.ts). Keys made with it would be rejected.')
+    }
+    const signature = sign(null, Buffer.from(signingMessage(payload)), privateKey)
     const key = formatActivationKey(payload, new Uint8Array(signature))
     if (!useDev) {
       mkdirSync(KEY_DIR, { recursive: true })
@@ -113,6 +120,33 @@ switch (command) {
     console.log(`\nActivation key for ${request}  (${tier}, ${validDays === 0 ? 'lifetime' : `${validDays} days → ${exp!.toISOString().slice(0, 10)}`}, serial #${serial})\n`)
     console.log(key)
     console.log('')
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      const tierAr = { BASIC: 'أساسي (حتى 3 مستخدمين)', PROFESSIONAL: 'احترافي (حتى 15 مستخدم)', ENTERPRISE: 'مؤسسات (بدون حد)' }[tier]
+      const until = validDays === 0 ? 'مدى الحياة ♾️' : `${validDays} يوم — حتى ${exp!.toISOString().slice(0, 10)}`
+      appendFileSync(
+        process.env.GITHUB_STEP_SUMMARY,
+        [
+          '## 🔑 مفتاح التفعيل جاهز',
+          '',
+          '| | |',
+          '|---|---|',
+          `| كود الطلب | \`${request.toUpperCase()}\` |`,
+          `| نوع الترخيص | ${tierAr} |`,
+          `| المدة | ${until} |`,
+          `| الرقم التسلسلي | #${serial} |`,
+          `| تاريخ الإصدار | ${issuedAt.toISOString().slice(0, 10)} |`,
+          '',
+          '**انسخ المفتاح ده كله وابعته للعميل:**',
+          '',
+          '```',
+          key,
+          '```',
+          '',
+          '> العميل يفتح **الإعدادات ← الترخيص** (أو شاشة التفعيل) ويلصق المفتاح ويضغط **تفعيل**. المفتاح يشتغل على الجهاز ده بس ومن غير إنترنت.',
+          ''
+        ].join('\n')
+      )
+    }
     break
   }
   case 'verify': {

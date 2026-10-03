@@ -1,0 +1,97 @@
+name: توليد مفتاح تفعيل
+
+# Vendor tool: issue an activation key for a customer's PC.
+# Needs the repository secret LICENSE_PRIVATE_KEY (contents of private-key.pem).
+# NOTE: in a PUBLIC repository, run logs and inputs are visible to everyone.
+# Activation keys are bound to one PC so they are harmless to others, but do not
+# put private customer details in the "customer" field — or make the repo private.
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_code:
+        description: 'كود الطلب من شاشة العميل (مثال: 7K3Q-9XWM-2PDA-HF6R)'
+        required: true
+        type: string
+      tier:
+        description: 'نوع الترخيص'
+        required: true
+        type: choice
+        default: 'PROFESSIONAL — احترافي (15 مستخدم)'
+        options:
+          - 'BASIC — أساسي (3 مستخدمين)'
+          - 'PROFESSIONAL — احترافي (15 مستخدم)'
+          - 'ENTERPRISE — مؤسسات (بدون حد)'
+      duration:
+        description: 'المدة'
+        required: true
+        type: choice
+        default: 'مدى الحياة'
+        options:
+          - 'مدى الحياة'
+          - 'سنة'
+          - '6 شهور'
+          - '3 شهور'
+          - 'شهر'
+      customer:
+        description: 'ملاحظة للسجل (اختياري — تظهر للعامة لو المستودع عام)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  issue:
+    name: إصدار المفتاح
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: تجهيز المفتاح السري
+        env:
+          LICENSE_PRIVATE_KEY: ${{ secrets.LICENSE_PRIVATE_KEY }}
+        run: |
+          if [ -z "$LICENSE_PRIVATE_KEY" ]; then
+            {
+              echo '## ❌ المفتاح السري غير موجود'
+              echo ''
+              echo 'أضف محتوى ملف `private-key.pem` كـ Secret باسم **LICENSE_PRIVATE_KEY**:'
+              echo '**Settings ← Secrets and variables ← Actions ← New repository secret**'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::LICENSE_PRIVATE_KEY secret is missing"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$LICENSE_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
+          chmod 600 "$RUNNER_TEMP/keys/private-key.pem"
+
+      - name: إصدار مفتاح التفعيل
+        env:
+          CENTRAL_LICENSE_KEY_DIR: ${{ runner.temp }}/keys
+          REQUEST: ${{ inputs.request_code }}
+          TIER: ${{ inputs.tier }}
+          DURATION: ${{ inputs.duration }}
+          CUSTOMER: ${{ inputs.customer }}
+        run: |
+          case "$DURATION" in
+            'سنة') DAYS=365 ;;
+            '6 شهور') DAYS=183 ;;
+            '3 شهور') DAYS=92 ;;
+            'شهر') DAYS=31 ;;
+            *) DAYS=0 ;;
+          esac
+          TIER_CODE="${TIER%% *}"
+          REQUEST="$(echo "$REQUEST" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')"
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts issue \
+            --request "$REQUEST" --tier "$TIER_CODE" --days "$DAYS" --serial "${{ github.run_number }}" ${CUSTOMER:+--customer "$CUSTOMER"} \
+            || { echo '## ❌ كود الطلب غير صحيح — راجعه مع العميل (16 حرف)' >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+
+      - name: مسح المفتاح السري
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

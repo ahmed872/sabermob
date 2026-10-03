@@ -1,0 +1,159 @@
+name: بناء نسخة ويندوز
+
+# Builds the Windows installer on a real Windows machine, tests it, and
+# (for a version tag or when asked) publishes it as a GitHub Release.
+#   • push a tag:  git tag v1.0.1 && git push origin v1.0.1
+#   • or: Actions → بناء نسخة ويندوز → Run workflow
+# The installer embeds the production PUBLIC key from src/main/license/public-key.ts
+# (the release check refuses the development key). No secret is needed to build.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'نشر كإصدار (Release) على GitHub؟'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: الاختبارات
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run release:check
+      - run: npm run typecheck
+      - run: npm test
+
+  windows:
+    name: بناء واختبار المثبّت على ويندوز
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: رقم الإصدار من الوسم
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+
+      - run: npm ci
+      - run: npm run release:check
+      - run: npm run build
+
+      - name: بناء المثبّت (NSIS)
+        run: npx electron-builder --win --x64 --config electron-builder.config.cjs --publish never
+
+      - name: اختبار النسخة المجمّعة (تشغيل حقيقي على ويندوز)
+        run: npx playwright test --config tests/e2e/packaged.config.ts
+
+      - name: تثبيت صامت ← تشغيل البرنامج المثبّت ← إزالة (البيانات تفضل موجودة)
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist -Filter 'Central-Pro-Setup-*.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'Installer not found' }
+          Write-Host "Installer: $($setup.Name)  ($([math]::Round($setup.Length / 1MB, 1)) MB)"
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Central Pro.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw 'Installed app not found under %LOCALAPPDATA%\Programs' }
+          Write-Host "Installed to: $($exe.DirectoryName)"
+          if (-not (Test-Path (Join-Path $exe.DirectoryName 'resources\migrations\0001_init\migration.sql'))) { throw 'Migrations missing from install' }
+          if (-not (Test-Path (Join-Path $exe.DirectoryName 'resources\app.asar.unpacked\node_modules\better-sqlite3\prebuilds\win32-x64.node'))) { throw 'SQLite driver missing from install' }
+
+          # Run the smoke test against the installed copy
+          $env:CENTRAL_APP_EXE = $exe.FullName
+          npx playwright test --config tests/e2e/packaged.config.ts
+          if ($LASTEXITCODE -ne 0) { throw 'Installed app smoke test failed' }
+
+          # Business data in %APPDATA% must survive uninstall
+          $data = Join-Path $env:APPDATA 'Central Pro'
+          New-Item -ItemType Directory -Force -Path $data | Out-Null
+          Set-Content -Path (Join-Path $data 'uninstall-check.txt') -Value 'keep me'
+          $uninstaller = Get-ChildItem $exe.DirectoryName -Filter 'Uninstall*.exe' | Select-Object -First 1
+          Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait
+          Start-Sleep -Seconds 5
+          if (Test-Path $exe.FullName) { throw 'Uninstall did not remove the program' }
+          if (-not (Test-Path (Join-Path $data 'uninstall-check.txt'))) { throw 'Uninstall deleted business data!' }
+          Write-Host 'Uninstall removed the program and kept the data folder.'
+
+      - name: رفع ملفات الإصدار
+        uses: actions/upload-artifact@v4
+        with:
+          name: Central-Pro-Windows
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist/Central-Pro-Setup-*.exe
+            dist/Central-Pro-Setup-*.exe.blockmap
+            dist/latest.yml
+
+      - name: لقطات الاختبار
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          if-no-files-found: ignore
+          path: test-results/
+
+  release:
+    name: نشر الإصدار
+    needs: windows
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Central-Pro-Windows
+          path: release
+      - name: إنشاء الإصدار على GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_REF" != refs/tags/v* ]]; then VERSION="$(node -p "require('./package.json').version")"; fi
+          TAG="v$VERSION"
+          EXE="$(ls release/Central-Pro-Setup-*.exe | head -1)"
+          SHA="$(sha256sum "$EXE" | cut -d' ' -f1)"
+          cat > notes.md <<NOTES
+          ## سنترال برو $VERSION
+
+          ### التثبيت
+          1. حمّل **$(basename "$EXE")** من الملفات تحت.
+          2. شغّله واضغط التالي. لو ظهر تحذير SmartScreen: **More info ← Run anyway**.
+          3. أول تشغيل: بيانات المحل، حساب المالك، كلمة مرور النسخ الاحتياطي.
+
+          ### التحديث من إصدار قديم
+          شغّل المثبّت الجديد على نفس الجهاز. البيانات والإعدادات والتفعيل بيفضلوا زي ما هم، وقاعدة البيانات بتتحدث بعد نسخة احتياطية تلقائية.
+
+          ### التفعيل
+          15 يوم تجربة. بعدها العميل يبعت **كود الطلب**، وتولّد المفتاح من **Actions ← توليد مفتاح تفعيل**.
+
+          ### التحقق
+          SHA-256: \`$SHA\`
+          NOTES
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --clobber
+          else
+            gh release create "$TAG" release/* --title "سنترال برو $VERSION" --notes-file notes.md --target "$GITHUB_SHA"
+          fi

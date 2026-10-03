@@ -44,7 +44,9 @@ export async function createTestApp(opts: { dir?: string; clock?: { now: Date };
     platformName: 'test',
     licensePlatform: platform,
     logToFiles: false,
-    now: () => clock.now
+    now: () => clock.now,
+    // Tests sign keys with the development key (the app ships the production public key).
+    publicKeyPem: readFileSync(resolve(__dirname, '../../scripts/license/dev-public-key.pem'), 'utf8')
   })
   const t: TestApp = {
     app,
