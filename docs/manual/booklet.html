@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>كتيب استخدام سنترال برو</title>
+<link rel="stylesheet" href="../../node_modules/@fontsource/cairo/400.css">
+<link rel="stylesheet" href="../../node_modules/@fontsource/cairo/600.css">
+<link rel="stylesheet" href="../../node_modules/@fontsource/cairo/700.css">
+<link rel="stylesheet" href="../../node_modules/@fontsource/cairo/800.css">
+<style>
+  :root {
+    --brand: #4f46e5; --brand-soft: #eef2ff; --ink: #0f172a; --muted: #475569; --line: #e2e8f0;
+    --ok: #15803d; --ok-soft: #ecfdf5; --warn: #b45309; --warn-soft: #fffbeb; --bad: #b91c1c; --bad-soft: #fef2f2;
+  }
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: Cairo, 'Segoe UI', Tahoma, sans-serif; font-size: 11.5pt; line-height: 1.85; }
+  main { max-width: 820px; margin: 0 auto; padding: 0 16px; }
+  @media print { main { max-width: none; padding: 0; } }
+
+  h1, h2, h3 { line-height: 1.4; margin: 0; }
+  h2 { font-size: 21pt; font-weight: 800; color: var(--ink); padding-bottom: 6px; margin-bottom: 14px; border-bottom: 3px solid var(--brand); display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { color: var(--brand); font-size: 26pt; }
+  h3, h2 { break-after: avoid-page; }
+  .keep { break-inside: avoid; }
+  h3 { font-size: 13.5pt; font-weight: 700; margin: 18px 0 6px; color: var(--brand); }
+  p { margin: 6px 0 8px; }
+  ul, ol { margin: 6px 0 10px; padding-inline-start: 22px; }
+  li { margin: 2px 0; }
+  b, strong { font-weight: 700; }
+
+  .chapter { break-before: page; }
+  figure { margin: 12px 0 16px; break-inside: avoid; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 2px 10px rgba(15, 23, 42, .08); }
+  figure.half img { width: 78%; margin: 0 auto; }
+  figcaption { font-size: 9.5pt; color: var(--muted); text-align: center; margin-top: 6px; }
+  figcaption b { color: var(--ink); }
+
+  .box { border-radius: 10px; padding: 10px 14px; margin: 12px 0; break-inside: avoid; border: 1px solid; }
+  .box .t { font-weight: 800; display: block; margin-bottom: 2px; }
+  .tip { background: var(--ok-soft); border-color: #a7f3d0; }
+  .tip .t { color: var(--ok); }
+  .note { background: var(--brand-soft); border-color: #c7d2fe; }
+  .note .t { color: var(--brand); }
+  .warn { background: var(--warn-soft); border-color: #fde68a; }
+  .warn .t { color: var(--warn); }
+  .danger { background: var(--bad-soft); border-color: #fecaca; }
+  .danger .t { color: var(--bad); }
+
+  kbd { font-family: inherit; font-size: 9.5pt; font-weight: 700; direction: ltr; unicode-bidi: isolate; display: inline-block; min-width: 26px; text-align: center; padding: 0 7px; border: 1px solid #cbd5e1; border-bottom-width: 3px; border-radius: 6px; background: #f8fafc; line-height: 1.7; }
+  .path { font-weight: 700; color: var(--brand); white-space: nowrap; }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; font-size: 10.5pt; break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; vertical-align: top; }
+  th { background: #f1f5f9; font-weight: 700; }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-inline-start: 38px; margin: 8px 0; }
+  .steps > li::before { content: counter(s); position: absolute; inset-inline-start: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; font-size: 10pt; display: grid; place-items: center; line-height: 1; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid2 figure { margin: 6px 0; }
+
+  /* cover */
+  .cover { height: 260mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 10px; }
+  .logo { width: 110px; height: 110px; border-radius: 28px; background: linear-gradient(135deg, #3b82f6, #4f46e5); display: grid; place-items: center; box-shadow: 0 10px 30px rgba(79, 70, 229, .35); }
+  .logo svg { width: 58px; height: 58px; }
+  .cover h1 { font-size: 36pt; font-weight: 800; margin-top: 18px; }
+  .cover .sub { font-size: 15pt; color: var(--muted); }
+  .cover .tag { margin-top: 24px; font-size: 12pt; background: var(--brand-soft); color: var(--brand); border-radius: 999px; padding: 6px 22px; font-weight: 700; }
+  .cover .meta { margin-top: 50px; color: var(--muted); font-size: 10.5pt; }
+
+  /* contents */
+  .toc ol { list-style: none; padding: 0; columns: 1; }
+  .toc li { display: flex; gap: 12px; align-items: baseline; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 12pt; }
+  .toc li span.n { color: var(--brand); font-weight: 800; min-width: 28px; }
+  .toc li span.d { color: var(--muted); font-size: 10pt; margin-inline-start: auto; }
+  .toc a { color: inherit; text-decoration: none; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+
+<!-- ───────────── cover ───────────── -->
+<section class="cover">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+  <h1>كتيب استخدام سنترال برو</h1>
+  <div class="sub">نظام إدارة محلات الموبايلات والإكسسوارات والصيانة</div>
+  <div class="tag">سهل جداً للموظف — قوي جداً لصاحب المحل</div>
+  <div class="meta">الإصدار 1.0.1 · كل الصور في الكتيب من البرنامج نفسه</div>
+</section>
+
+<!-- ───────────── contents ───────────── -->
+<section class="chapter toc">
+  <h2>المحتويات</h2>
+  <ol>
+    <li><span class="n">1</span><a href="#c1">التثبيت وأول تشغيل</a><span class="d">تجهيز المحل في دقيقتين</span></li>
+    <li><span class="n">2</span><a href="#c2">الدخول والشاشة الرئيسية</a><span class="d">الـ PIN، القائمة، لوحة اليوم</span></li>
+    <li><span class="n">3</span><a href="#c3">البيع (نقطة البيع)</a><span class="d">الباركود، الدفع، الاختصارات</span></li>
+    <li><span class="n">4</span><a href="#c4">سجل المبيعات والمرتجع</a><span class="d">إعادة طباعة، مرتجع، إلغاء</span></li>
+    <li><span class="n">5</span><a href="#c5">الورديات وفلوس الدرج</a><span class="d">فتح وقفل وعجز وزيادة</span></li>
+    <li><span class="n">6</span><a href="#c6">المخزن</a><span class="d">الأصناف، الـ IMEI، الجرد، الملصقات، Excel</span></li>
+    <li><span class="n">7</span><a href="#c7">الصيانة</a><span class="d">استلام، متابعة، تسليم</span></li>
+    <li><span class="n">8</span><a href="#c8">العملاء والآجل</a><span class="d">الحساب والتحصيل</span></li>
+    <li><span class="n">9</span><a href="#c9">الموردين والمشتريات</a><span class="d">فواتير الشراء والدفع</span></li>
+    <li><span class="n">10</span><a href="#c10">العروض الذكية</a><span class="d">زوّد البيع من غير ما تخسر</span></li>
+    <li><span class="n">11</span><a href="#c11">التقارير</a><span class="d">مبيعات، أرباح، مخزن، تصدير</span></li>
+    <li><span class="n">12</span><a href="#c12">البحث السريع وQR</a><span class="d">Ctrl + K من أي مكان</span></li>
+    <li><span class="n">13</span><a href="#c13">الإعدادات والموظفين والصلاحيات</a><span class="d">مين يعمل إيه</span></li>
+    <li><span class="n">14</span><a href="#c14">النسخ الاحتياطي والنقل لجهاز جديد</a><span class="d">أهم فصل في الكتيب</span></li>
+    <li><span class="n">15</span><a href="#c15">التفعيل</a><span class="d">التجربة ومفتاح التفعيل</span></li>
+    <li><span class="n">16</span><a href="#c16">مشاكل شائعة وحلولها</a><span class="d">ونصائح يومية</span></li>
+  </ol>
+  <div class="box note"><span class="t">قبل ما تبدأ</span>
+    البرنامج بيشتغل <b>من غير إنترنت خالص</b>. كل بياناتك على جهازك ومحفوظة في نسخ احتياطية مشفّرة.
+    الأزرار والشاشات اللي في الصور هي نفسها اللي هتشوفها — دوّر على نفس الاسم واضغط عليه.
+  </div>
+</section>
+
+<!-- ───────────── 1 ───────────── -->
+<section class="chapter" id="c1">
+  <h2><span class="no">1</span> التثبيت وأول تشغيل</h2>
+  <ol class="steps">
+    <li>شغّل ملف <b class="ltr">Central-Pro-Setup-1.0.1.exe</b> واستنى لحد ما يخلص (البرنامج بيتثبت لوحده).
+      لو ظهرت رسالة ويندوز الزرقا <b>«Windows protected your PC»</b> اضغط <b>More info</b> ثم <b>Run anyway</b>.</li>
+    <li>افتح أيقونة <b>Central Pro</b> من سطح المكتب.</li>
+    <li>أول مرة بس، البرنامج هيسألك كام سؤال بسيط — كل خطوة فيها زر <b>التالي</b> و<b>رجوع</b>.</li>
+  </ol>
+  <div class="grid2">
+    <figure><img src="img/01-welcome.jpg" alt=""><figcaption><b>الترحيب:</b> اضغط «ابدأ». جاي من جهاز تاني؟ اختار «استرجاع من نسخة احتياطية».</figcaption></figure>
+    <figure><img src="img/02-language.jpg" alt=""><figcaption><b>اللغة:</b> العربية أو English (تقدر تغيرها بعدين في أي وقت).</figcaption></figure>
+    <figure><img src="img/03-store.jpg" alt=""><figcaption><b>بيانات المحل:</b> الاسم والتليفون والعنوان — بيظهروا على الإيصال.</figcaption></figure>
+    <figure><img src="img/04-currency.jpg" alt=""><figcaption><b>العملة والضريبة:</b> الافتراضي جنيه مصري من غير ضريبة.</figcaption></figure>
+  </div>
+  <figure><img src="img/05-owner.jpg" alt=""><figcaption><b>حساب المالك:</b> الاسم واسم المستخدم وكلمة المرور، ورقم سري سريع (PIN) للدخول بلمسة، وكلمة مرور النسخ الاحتياطي.</figcaption></figure>
+  <div class="box danger"><span class="t">مهم جداً: كلمة مرور النسخ الاحتياطي</span>
+    دي اللي بتفتح نسخك الاحتياطية لو الجهاز باظ أو اتسرق أو نقلت لجهاز جديد. البرنامج بيقترح تستخدم نفس كلمة مرور حسابك،
+    أو تقدر تكتب واحدة مختلفة. <b>اكتبها في ورقة وخليها في مكان أمين بعيد عن الجهاز.</b> من غيرها محدش يقدر يفتح النسخة — ولا حتى الدعم الفني.
+  </div>
+  <div class="grid2">
+    <figure><img src="img/06-printer.jpg" alt=""><figcaption><b>الطابعة:</b> اختار طابعة الإيصالات ومقاس الورق (58 أو 80 مم أو A4) — أو «تخطي» وظبطها بعدين.</figcaption></figure>
+    <figure><img src="img/07-catalog.jpg" alt=""><figcaption><b>أقسام جاهزة:</b> إكسسوارات وشواحن واسكرينات وخدمات شحن وصيانة — توفّر عليك وقت.</figcaption></figure>
+  </div>
+  <figure class="half"><img src="img/08-done.jpg" alt=""><figcaption><b>محلك جاهز!</b> اضغط «دخول». فترة التجربة (15 يوم بكل المميزات) بتبدأ من دلوقتي.</figcaption></figure>
+</section>
+
+<!-- ───────────── 2 ───────────── -->
+<section class="chapter" id="c2">
+  <h2><span class="no">2</span> الدخول والشاشة الرئيسية</h2>
+  <figure class="half"><img src="img/09-login-pin.jpg" alt=""><figcaption><b>شاشة الدخول:</b> اضغط الرقم السري على الأزرار (أو اكتبه بالكيبورد) ثم ✓. ممكن تدخل بكلمة المرور من الرابط اللي تحت.</figcaption></figure>
+  <ul>
+    <li><b>تبديل المستخدم</b> (فوق الشاشة): كل موظف يدخل باسمه، وكل عملية بتتسجل باسم اللي عملها.</li>
+    <li><b>قفل</b> (آخر القائمة): يقفل الشاشة وأنت سايب الجهاز — الشغل المفتوح مش بيضيع. البرنامج بيقفل لوحده بعد فترة من غير استخدام.</li>
+  </ul>
+  <figure><img src="img/10-dashboard.jpg" alt=""><figcaption><b>الرئيسية:</b> صورة كاملة عن المحل النهارده في شاشة واحدة.</figcaption></figure>
+  <h3>إيه اللي في الشاشة الرئيسية؟</h3>
+  <table>
+    <tr><th style="width:30%">الجزء</th><th>معناه</th></tr>
+    <tr><td>القائمة (يمين)</td><td>الرئيسية، المبيعات، المخزن، الصيانة، العملاء، الموردين، التقارير، الإعدادات. الموظف بيشوف بس الأقسام المسموحله بيها.</td></tr>
+    <tr><td>الشريط اللي فوق</td><td>البحث (<kbd>Ctrl</kbd> + <kbd>K</kbd>)، أيام التجربة الباقية، تغيير اللغة، الوضع الفاتح/الغامق (أيقونة الشمس)، واسم المستخدم.</td></tr>
+    <tr><td>أزرار سريعة</td><td><b>بيع جديد</b> · <b>استلام جهاز</b> (صيانة) · <b>إضافة صنف</b> · <b>فاتورة شراء</b>.</td></tr>
+    <tr><td>الكروت</td><td>مبيعات اليوم وعدد العمليات ومقارنة بامبارح، ربح اليوم، أجهزة تحت الإصلاح، أصناف قربت تخلص، فلوس علينا للموردين ولنا عند العملاء. <b>اضغط على أي كارت يوديك للتفاصيل.</b></td></tr>
+    <tr><td>تنبيهات ذكية</td><td>أصناف خلصت أو قربت تخلص، صيانة متأخرة أو جاهزة للتسليم، ورديات فيها فرق في الفلوس.</td></tr>
+    <tr><td>الرسم والقوائم</td><td>مبيعات وربح آخر 14 يوم، الأكثر مبيعاً، والصيانة اللي محتاجة متابعة.</td></tr>
+  </table>
+  <div class="box tip"><span class="t">نصيحة</span>الأرقام بتتحدث لوحدها كل دقيقة، ولما ترجع للرئيسية من أي شاشة.</div>
+</section>
+
+<!-- ───────────── 3 ───────────── -->
+<section class="chapter" id="c3">
+  <h2><span class="no">3</span> البيع (نقطة البيع)</h2>
+  <p>من القائمة اختار <span class="path">المبيعات</span> أو اضغط <b>بيع جديد</b> من الرئيسية.</p>
+  <figure><img src="img/11-pos-empty.jpg" alt=""><figcaption><b>شاشة البيع:</b> خانة الباركود والبحث فوق، الأقسام والمفضلة تحتها، والفاتورة على الشمال.</figcaption></figure>
+  <ol class="steps">
+    <li><b>افتح وردية</b> أول مرة في اليوم واكتب الفلوس اللي في الدرج (شوف الفصل 5).</li>
+    <li><b>امسح الباركود</b> بالقارئ — الصنف بيتضاف للفاتورة لوحده. أو اكتب جزء من الاسم واضغط على الصنف، أو اختاره من الأقسام.</li>
+    <li>غيّر الكمية بـ <kbd>+</kbd> و<kbd>−</kbd>، واحذف سطر بأيقونة الزبالة أو <kbd>Delete</kbd>.</li>
+    <li>اضغط <b>دفع</b> أو <kbd>F8</kbd> ← اختار طريقة الدفع ← <b>إتمام البيع</b> أو <kbd>F10</kbd>.</li>
+  </ol>
+  <div class="grid2">
+    <figure><img src="img/12-pos-search.jpg" alt=""><figcaption><b>البحث بالاسم:</b> كتبنا «جراب» فظهر الصنف بسعره.</figcaption></figure>
+    <figure><img src="img/13-pos-cart.jpg" alt=""><figcaption><b>الفاتورة:</b> صنفين، والإجمالي 270 ج.م. لاحظ الاقتراح الذكي تحت.</figcaption></figure>
+  </div>
+  <figure><img src="img/14-pos-payment.jpg" alt=""><figcaption><b>الدفع:</b> كاش / فيزا / محفظة... اكتب المبلغ اللي استلمته أو اضغط على مبلغ جاهز (500، 1,000...) والبرنامج يحسب الباقي.</figcaption></figure>
+  <div class="grid2">
+    <figure><img src="img/15-pos-done.jpg" alt=""><figcaption><b>تم البيع:</b> رقم الإيصال، طباعة الإيصال أو فاتورة A4، و«بيع جديد».</figcaption></figure>
+    <figure><img src="img/16-pos-customer.jpg" alt=""><figcaption><b>اختيار عميل</b> (<kbd>F4</kbd>): بالاسم أو الموبايل، أو «عميل جديد» من نفس الشاشة.</figcaption></figure>
+  </div>
+
+  <h3>اختصارات الكيبورد (بتظهر تحت شاشة البيع كمان)</h3>
+  <table>
+    <tr><th style="width:28%">المفتاح</th><th>الوظيفة</th></tr>
+    <tr><td><kbd>F2</kbd></td><td>رجوع لخانة البحث / الباركود</td></tr>
+    <tr><td><kbd>F4</kbd></td><td>اختيار عميل</td></tr>
+    <tr><td><kbd>F6</kbd></td><td>خصم على الفاتورة (حسب صلاحيتك)</td></tr>
+    <tr><td><kbd>F8</kbd></td><td>شاشة الدفع</td></tr>
+    <tr><td><kbd>F10</kbd> أو <kbd>Enter</kbd></td><td>إتمام البيع (جوه شاشة الدفع)</td></tr>
+    <tr><td><kbd>F9</kbd></td><td>تعليق الفاتورة — تخدم عميل تاني وترجعلها من «الفواتير المعلقة»</td></tr>
+    <tr><td><kbd>+</kbd> / <kbd>−</kbd> / <kbd>Delete</kbd></td><td>زيادة / تقليل / حذف السطر المحدد</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>قفل أي نافذة مفتوحة</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>بحث في البرنامج كله</td></tr>
+  </table>
+
+  <h3>حاجات لازم تعرفها</h3>
+  <ul>
+    <li><b>بيع سريع</b> = إيصال صغير. <b>فاتورة</b> = باسم العميل (الزرين فوق الفاتورة).</li>
+    <li><b>دفع مقسّم:</b> جزء كاش وجزء فيزا مثلاً — اكتب مبلغ كل طريقة.</li>
+    <li><b>آجل:</b> لو العميل دفع أقل من الإجمالي، الباقي بيتسجل عليه في حسابه — لازم تختار عميل. البرنامج بيمنع الآجل لو العميل عدّى حد الآجل بتاعه.</li>
+    <li><b>الخصم الكبير</b> أو البيع تحت سعر معين بيطلب <b>موافقة المدير</b>: المدير يكتب الـ PIN بتاعه على نفس الشاشة، وده بيتسجل.</li>
+    <li><b>أجهزة الـ IMEI:</b> وقت بيع موبايل البرنامج بيطلب تختار رقم الجهاز اللي بتبيعه، عشان الضمان والمرتجع.</li>
+  </ul>
+  <div class="box tip"><span class="t">النور قطع وسط البيع؟</span>
+    افتح البرنامج تاني — الفاتورة اللي كانت مفتوحة بترجع زي ما هي. والبرنامج عمره ما بيسجل نفس البيعة مرتين حتى لو ضغطت «إتمام» أكتر من مرة.</div>
+  <div class="box note"><span class="t">الطابعة مش شغالة؟</span>البيع بيتسجل عادي. اطبع الإيصال بعدين من سجل المبيعات.</div>
+</section>
+
+<!-- ───────────── 4 ───────────── -->
+<section class="chapter" id="c4">
+  <h2><span class="no">4</span> سجل المبيعات والمرتجع</h2>
+  <p>من شاشة البيع اضغط <span class="path">سجل المبيعات</span> (فوق). كل فاتورة بالتاريخ والعميل والكاشير والإجمالي والربح والحالة.
+    تقدر تدور برقم الإيصال أو اسم/موبايل العميل، وتختار الفترة (النهارده، الأسبوع...).</p>
+  <figure><img src="img/17-sales-history.jpg" alt=""><figcaption><b>سجل المبيعات:</b> لاحظ الفاتورة INV-000001 مكتوب تحتها «آجل 160 ج.م» — يعني العميل لسه عليه الباقي.</figcaption></figure>
+  <figure><img src="img/18-sale-detail.jpg" alt=""><figcaption><b>تفاصيل الفاتورة:</b> الأصناف والمدفوعات، و: إعادة طباعة · فاتورة A4 · مرتجع · إلغاء العملية.</figcaption></figure>
+  <h3>عمل مرتجع</h3>
+  <ol class="steps">
+    <li>افتح الفاتورة ← <b>مرتجع</b>.</li>
+    <li>اكتب الكمية اللي راجعة من كل صنف (كله أو جزء منه)، و«يرجع للمخزن» لو الصنف سليم.</li>
+    <li>اختار طريقة رد الفلوس (نفس طريقة الدفع أو كاش أو رصيد للعميل) واكتب السبب ← <b>مرتجع</b>.</li>
+  </ol>
+  <figure><img src="img/19-refund.jpg" alt=""><figcaption><b>المرتجع:</b> البرنامج بيحسب المبلغ المرتجع لوحده، والمخزون بيرجع، والفلوس بتطلع من الدرج وبتظهر في الوردية.</figcaption></figure>
+  <div class="box warn"><span class="t">الإلغاء غير المرتجع</span>
+    <b>إلغاء العملية</b> للفاتورة اللي اتعملت غلط (ولسه مفيهاش مرتجع): بيرجّع المخزون والفلوس كأنها ما حصلتش. المرتجع لما العميل يرجّع بضاعة. الاتنين ممكن يحتاجوا موافقة المدير، وبيتسجلوا في سجل النشاط.</div>
+</section>
+
+<!-- ───────────── 5 ───────────── -->
+<section class="chapter" id="c5">
+  <h2><span class="no">5</span> الورديات وفلوس الدرج</h2>
+  <p>الوردية بتعرّفك <b>الفلوس اللي المفروض تكون في الدرج</b> في أي لحظة، وبتكشف أي عجز أو زيادة.</p>
+  <ul>
+    <li><b>فتح وردية:</b> أول ما تفتح شاشة البيع، اكتب الفلوس اللي في الدرج (الفكة).</li>
+    <li>كل بيع كاش، تحصيل من عميل، عربون صيانة، دفع لمورد أو مرتجع — بيتحسب على الوردية لوحده.</li>
+    <li><b>حركة الدرج:</b> لو حطيت فلوس في الدرج أو خدت منه (مصروف، فكة...) سجّلها «إيداع» أو «سحب / مصروف» بالسبب.</li>
+    <li><b>قفل الوردية</b> آخر اليوم: <span class="path">المبيعات ← الورديات</span> أو من زر الوردية في شاشة البيع.</li>
+  </ul>
+  <figure><img src="img/20-shifts.jpg" alt=""><figcaption><b>الورديات:</b> كل وردية بمين فتحها وإمتى، والمبيعات، والفلوس المتوقعة في الدرج.</figcaption></figure>
+  <figure><img src="img/21-close-shift.jpg" alt=""><figcaption><b>ملخص الوردية:</b> البداية + الكاش الداخل (مبيعات وتحصيلات وعربون) + الإيداع − السحب والمصروفات ومدفوعات الموردين والمرتجع = المتوقع في الدرج.</figcaption></figure>
+  <div class="box tip"><span class="t">عجز أو زيادة؟</span>
+    البرنامج بيوريك الفرق فوراً، وبيظهر تنبيه في الرئيسية لصاحب المحل لحد ما يراجعه. تقدر تطبع تقرير الوردية للأرشيف.</div>
+</section>
+
+<!-- ───────────── 6 ───────────── -->
+<section class="chapter" id="c6">
+  <h2><span class="no">6</span> المخزن</h2>
+  <figure><img src="img/22-inventory.jpg" alt=""><figcaption><b>المخزن:</b> كل الأصناف بالباركود وسعر البيع والتكلفة والكمية. فلتر بالقسم والماركة والنوع، أو اختار «قرب يخلص» و«نفد».</figcaption></figure>
+  <div class="keep">
+  <h3>صنف جديد</h3>
+  <p>اضغط <b>صنف جديد</b> واختار النوع: إكسسوار، موبايل جديد، موبايل مستعمل، خدمة (زي الشحن والكروت)، قطعة غيار، أو أخرى.</p>
+  </div>
+  <figure><img src="img/23-product-new.jpg" alt=""><figcaption><b>صنف جديد:</b> الاسم، القسم والماركة، سعر البيع والتكلفة وأقل سعر بيع، الكمية الافتتاحية وحد التنبيه، والباركود.</figcaption></figure>
+  <ul>
+    <li><b>من غير باركود؟</b> سيب الخانة فاضية والبرنامج يعمل باركود داخلي تطبعه على ملصق.</li>
+    <li><b>الموبايلات بالـ IMEI:</b> فعّل «تتبع السيريال» واكتب أو امسح أرقام الـ IMEI. كل جهاز ليه تاريخه: اتشرى من مين، اتباع لمين، رجع إمتى.</li>
+    <li><b>الألوان والمقاسات:</b> الصنف الواحد ممكن يبقى له أكتر من شكل (variant) لكل واحد سعره وكميته.</li>
+    <li><b>أقل سعر بيع:</b> البرنامج يمنع الكاشير يبيع تحته من غير موافقة.</li>
+    <li><b>إظهار في مفضلة الكاشير:</b> الصنف بيظهر كزر سريع في شاشة البيع.</li>
+  </ul>
+  <div class="grid2">
+    <figure><img src="img/24-adjust.jpg" alt=""><figcaption><b>تسوية المخزون:</b> وارد، تالف/مفقود، جرد (العدد الحقيقي) — كل تسوية بسببها واسم الموظف.</figcaption></figure>
+    <figure><img src="img/25-labels.jpg" alt=""><figcaption><b>طباعة ملصقات</b> بالباركود والسعر لأي صنف وأي عدد.</figcaption></figure>
+    <figure><img src="img/26-import.jpg" alt=""><figcaption><b>استيراد من Excel أو CSV:</b> «تحميل نموذج جاهز»، املاه، واسحبه هنا.</figcaption></figure>
+    <figure><img src="img/27-movements.jpg" alt=""><figcaption><b>حركة المخزون:</b> كل دخول وخروج لكل صنف — بيع، شراء، مرتجع، صيانة، تسوية.</figcaption></figure>
+  </div>
+  <div class="box note"><span class="t">الاستيراد آمن</span>
+    البرنامج بيتعرّف على الأعمدة لوحده (الاسم، السعر، الكمية، الباركود...)، وبيوريك الصفوف اللي فيها مشاكل (سعر فاضي، باركود متكرر...) <b>قبل</b> ما يضيف أي حاجة. وتقدر تستورد العملاء بنفس الطريقة من شاشة العملاء.</div>
+</section>
+
+<!-- ───────────── 7 ───────────── -->
+<section class="chapter" id="c7">
+  <h2><span class="no">7</span> الصيانة</h2>
+  <figure><img src="img/28-repairs.jpg" alt=""><figcaption><b>لوحة الصيانة:</b> كل عمود حالة (تم الاستلام، جاري الفحص، في انتظار موافقة العميل...)، وكل كارت جهاز. تقدر تعرضها كجدول كمان.</figcaption></figure>
+  <div class="keep">
+  <h3>استلام جهاز</h3>
+  <figure><img src="img/29-repair-new.jpg" alt=""><figcaption><b>استلام جهاز:</b> العميل وموبايله، الجهاز (الماركة والموديل والـ IMEI وقفل الشاشة)، العطل، السعر المتوقع والعربون، الملحقات اللي معاه، صور وتوقيع العميل.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>قفل الشاشة</b> بيتحفظ مشفّر، ومش بيظهر غير للفني.</li>
+    <li>اطبع <b>إيصال الاستلام</b> للعميل — عليه رقم الصيانة (زي RP-0001) وكود QR.</li>
+    <li>العربون بيدخل الدرج ويتخصم من الحساب وقت التسليم.</li>
+  </ul>
+  <figure><img src="img/30-repair-detail.jpg" alt=""><figcaption><b>تذكرة الصيانة:</b> بيانات الجهاز، الفني المسؤول، ميعاد التسليم، قطع الغيار، المدفوعات، والسجل الكامل.</figcaption></figure>
+  <div class="grid2">
+    <figure><img src="img/31-repair-status.jpg" alt=""><figcaption><b>نقل إلى:</b> غيّر الحالة بضغطة — جاري الفحص، انتظار موافقة العميل، انتظار قطع الغيار، جاري الإصلاح، اختبار، جاهز للتسليم.</figcaption></figure>
+    <figure><img src="img/32-repair-deliver.jpg" alt=""><figcaption><b>التسليم:</b> حصّل الباقي، وخلي العميل يوقّع. الضمان بيبدأ من يوم التسليم.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>قطع الغيار</b> اللي بتضيفها للتذكرة بتتخصم من المخزن وبتتحسب في تكلفة الصيانة وربحها.</li>
+    <li>الأجهزة المتأخرة عن ميعادها والجاهزة للتسليم بتظهر تنبيه في <b>الرئيسية</b>.</li>
+    <li>فلتر اللوحة بالفني عشان كل فني يشوف شغله، وصاحب المحل بيشوف شغل كل فني في <b>التقارير ← الموظفين</b>.</li>
+  </ul>
+</section>
+
+<!-- ───────────── 8 ───────────── -->
+<section class="chapter" id="c8">
+  <h2><span class="no">8</span> العملاء والآجل</h2>
+  <figure><img src="img/33-customers.jpg" alt=""><figcaption><b>العملاء:</b> الاسم والموبايل والنوع (عادي / VIP / جملة) والمشتريات والنقاط والرصيد. «عليهم فلوس» يفلتر المديونين بس.</figcaption></figure>
+  <figure><img src="img/34-customer-detail.jpg" alt=""><figcaption><b>حساب العميل:</b> الرصيد، إجمالي المشتريات، كشف الحساب (كل فاتورة وكل دفعة)، المشتريات والصيانة.</figcaption></figure>
+  <figure class="half"><img src="img/35-collect.jpg" alt=""><figcaption><b>تحصيل:</b> البرنامج بيكتب المبلغ اللي على العميل لوحده — عدّله لو دفع جزء، واختار طريقة الدفع.</figcaption></figure>
+  <ul>
+    <li><b>حد الآجل:</b> لكل عميل حد؛ البيع الآجل بيقف لو عدّاه.</li>
+    <li><b>تسوية الرصيد:</b> لتصحيح رصيد قديم (بسبب، ويتسجل في سجل النشاط).</li>
+    <li><b>نقاط الولاء</b> (اختياري من الإعدادات): العميل بيجمع نقاط ويدفع بيها.</li>
+  </ul>
+</section>
+
+<!-- ───────────── 9 ───────────── -->
+<section class="chapter" id="c9">
+  <h2><span class="no">9</span> الموردين والمشتريات</h2>
+  <figure><img src="img/36-suppliers.jpg" alt=""><figcaption><b>الموردين:</b> كل مورد بإجمالي المشتريات والرصيد (علينا له / لنا عنده).</figcaption></figure>
+  <figure><img src="img/37-supplier-detail.jpg" alt=""><figcaption><b>صفحة المورد:</b> المشتريات والمدفوعات وكشف الحساب، وأزرار: فاتورة شراء · دفع للمورد · مرتجع للمورد.</figcaption></figure>
+  <h3>فاتورة شراء</h3>
+  <ol class="steps">
+    <li><b>فاتورة شراء</b> ← اختار المورد واكتب رقم فاتورته (اختياري).</li>
+    <li>ضيف الأصناف بالباركود أو البحث، واكتب الكمية وسعر الشراء.</li>
+    <li>فعّل <b>«تم استلام البضاعة»</b> عشان المخزون يزيد حالاً — أو سيبها مطلوبة واستلمها بعدين (كلها أو جزء منها).</li>
+    <li>اكتب المدفوع دلوقتي (لو فيه)، والباقي بيتسجل على حساب المورد.</li>
+  </ol>
+  <div class="grid2">
+    <figure><img src="img/39-purchase-new.jpg" alt=""><figcaption><b>فاتورة شراء جديدة.</b></figcaption></figure>
+    <figure><img src="img/38-supplier-pay.jpg" alt=""><figcaption><b>دفع للمورد:</b> كاش أو فيزا أو محفظة أو تحويل، والرصيد بيتحدّث لوحده.</figcaption></figure>
+  </div>
+  <div class="box tip"><span class="t">التكلفة بتتحدّث لوحدها</span>
+    كل ما تشتري بسعر جديد، البرنامج بيحسب متوسط التكلفة للصنف، فالأرباح في التقارير بتبقى حقيقية.</div>
+</section>
+
+<!-- ───────────── 10 ───────────── -->
+<section class="chapter" id="c10">
+  <h2><span class="no">10</span> العروض الذكية</h2>
+  <p>العروض بتساعد الكاشير يبيع أكتر: البرنامج بيقترح الصنف المناسب في الوقت المناسب، ويحسب الخصم لوحده.</p>
+  <figure><img src="img/41-offer-new.jpg" alt=""><figcaption><b>عرض جديد:</b> اختار نوع العرض، والأصناف أو الأقسام اللي بتشغّله، واللي عليها الخصم.</figcaption></figure>
+  <table>
+    <tr><th style="width:30%">نوع العرض</th><th>مثال</th></tr>
+    <tr><td>اقتراح إضافي</td><td>اشترى جراب ← اقترح اسكرينة بخصم 20%.</td></tr>
+    <tr><td>سعر باقة</td><td>جراب + اسكرينة + شاحن بـ 400 ج.م بدل 480.</td></tr>
+    <tr><td>اشتري بمبلغ واحصل</td><td>فاتورة فوق 1,000 ج.م ← خصم 50 ج.م.</td></tr>
+    <tr><td>تصفية</td><td>خصم على الأصناف الراكدة اللي بقالها كتير متباعتش.</td></tr>
+    <tr><td>خصم % / خصم مبلغ (تلقائي)</td><td>خصم على صنف أو قسم لفترة محددة.</td></tr>
+    <tr><td>خصم الكمية</td><td>3 كابلات أو أكتر ← 10% خصم.</td></tr>
+    <tr><td>اشتري X وخد Y مجاناً</td><td>اشتري 2 وخد الثالث هدية.</td></tr>
+  </table>
+  <div class="grid2">
+    <figure><img src="img/40-offers.jpg" alt=""><figcaption><b>العروض:</b> تشغيل وإيقاف أي عرض بضغطة، ونتايج كل عرض.</figcaption></figure>
+    <figure><img src="img/42-pos-suggestion.jpg" alt=""><figcaption><b>في شاشة البيع:</b> الاقتراح بيظهر تحت الفاتورة — «إضافة» أو تجاهله.</figcaption></figure>
+  </div>
+  <div class="box note"><span class="t">العروض عمرها ما بتخسّرك</span>
+    البرنامج <b>مش بيبيع أبداً تحت أقل سعر بيع أو تحت هامش الربح</b> اللي حددته في الإعدادات، ومش بيعرض أكتر من 1–3 اقتراحات عشان ميعطّلش الكاشير.</div>
+</section>
+
+<!-- ───────────── 11 ───────────── -->
+<section class="chapter" id="c11">
+  <h2><span class="no">11</span> التقارير</h2>
+  <p>من <span class="path">التقارير</span>: المبيعات، الأرباح، المخزن، الصيانة، الموردين، الموظفين — لأي فترة (النهارده، امبارح، الأسبوع، الشهر، أو من تاريخ لتاريخ).</p>
+  <figure><img src="img/43-reports-sales.jpg" alt=""><figcaption><b>تقرير المبيعات:</b> صافي المبيعات وعدد الفواتير والربح والخصومات، رسم بالأيام، وحسب طريقة الدفع (كاش / فيزا / آجل...) وحسب القسم.</figcaption></figure>
+  <div class="grid2">
+    <figure><img src="img/44-reports-profit.jpg" alt=""><figcaption><b>الأرباح:</b> ربح الأصناف والصيانة والخدمات، ناقص المرتجعات = صافي الربح.</figcaption></figure>
+    <figure><img src="img/45-reports-inventory.jpg" alt=""><figcaption><b>المخزن:</b> قيمة المخزون بالتكلفة والبيع، قرب يخلص، راكد، سريع وبطيء البيع.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>تصدير:</b> كل جدول فوقه أزرار <b>Excel</b> و<b>CSV</b> و<b>PDF</b>.</li>
+    <li>الموظف بيشوف بس اللي مسموحله بيه — مثلاً الكاشير مش بيشوف التكلفة والربح.</li>
+    <li>«مبيعات» في التقارير = مبيعات فعلية بعد المرتجع. التحصيلات من الديون وعربون الصيانة بيظهروا في الوردية، مش كمبيعات جديدة.</li>
+  </ul>
+</section>
+
+<!-- ───────────── 12 ───────────── -->
+<section class="chapter" id="c12">
+  <h2><span class="no">12</span> البحث السريع وQR</h2>
+  <p>اضغط <kbd>Ctrl</kbd> + <kbd>K</kbd> من أي شاشة (أو خانة «بحث» فوق) واكتب أي حاجة: اسم صنف، باركود، اسم عميل، رقم موبايل، رقم صيانة، رقم إيصال، IMEI، أو مورد.</p>
+  <figure><img src="img/46-search.jpg" alt=""><figcaption><b>البحث:</b> كتبنا «سارة» فظهرت العميلة وتذكرة الصيانة بتاعتها. اضغط على النتيجة تروح لها على طول.</figcaption></figure>
+  <ul>
+    <li><b>مسح QR:</b> الإيصال وتذكرة الصيانة عليهم كود QR. امسحه بالقارئ أو بالكاميرا (زر QR في البحث) — يفتح الفاتورة أو التذكرة فوراً.</li>
+    <li>العميل جه يسأل على موبايله؟ اكتب رقم موبايله أو رقم التذكرة واعرف الحالة في ثانية.</li>
+  </ul>
+</section>
+
+<!-- ───────────── 13 ───────────── -->
+<section class="chapter" id="c13">
+  <h2><span class="no">13</span> الإعدادات والموظفين والصلاحيات</h2>
+  <p>كل الإعدادات في <span class="path">الإعدادات</span>، مقسمة لأربع مجموعات:</p>
+  <table>
+    <tr><th style="width:24%">المجموعة</th><th>الأقسام</th></tr>
+    <tr><td>النشاط</td><td>بيانات المحل · الضرائب · الفواتير والإيصالات</td></tr>
+    <tr><td>الأشخاص والأمان</td><td>المستخدمين · الأدوار والصلاحيات · الأمان · سجل النشاط</td></tr>
+    <tr><td>التشغيل</td><td>نقطة البيع · المخزن · الصيانة · العروض الذكية · نقاط الولاء</td></tr>
+    <tr><td>النظام</td><td>الطابعات · رموز QR · النسخ الاحتياطي · الترخيص · هذا الجهاز</td></tr>
+  </table>
+  <div class="grid2">
+    <figure><img src="img/47-settings-company.jpg" alt=""><figcaption><b>بيانات المحل:</b> الاسم والتليفون والعنوان والسجل التجاري والعملة.</figcaption></figure>
+    <figure><img src="img/48-settings-pos.jpg" alt=""><figcaption><b>نقطة البيع:</b> طرق الدفع المتاحة، لازم وردية مفتوحة، البيع بالسالب، الطباعة التلقائية، صوت القارئ.</figcaption></figure>
+    <figure><img src="img/49-settings-printing.jpg" alt=""><figcaption><b>الطابعات:</b> طابعة الإيصال ومقاسها، طابعة A4، طابعة الملصقات ومقاس الملصق، وصفحة تجربة.</figcaption></figure>
+    <figure><img src="img/54-settings-qr.jpg" alt=""><figcaption><b>رموز QR:</b> تختار تظهر فين (الإيصال، تذكرة الصيانة، الملصقات...).</figcaption></figure>
+  </div>
+  <div class="keep">
+  <h3>الموظفين</h3>
+  <div class="grid2">
+  </div>
+    <figure><img src="img/50-settings-users.jpg" alt=""><figcaption><b>المستخدمين:</b> كل موظف بدوره وآخر دخول وحالته (نشط / موقوف).</figcaption></figure>
+    <figure><img src="img/57-new-user.jpg" alt=""><figcaption><b>مستخدم جديد:</b> الاسم، اسم المستخدم، الدور، كلمة المرور، والـ PIN.</figcaption></figure>
+  </div>
+  <figure><img src="img/51-settings-roles.jpg" alt=""><figcaption><b>الأدوار والصلاحيات:</b> 6 أدوار جاهزة — المالك، مدير، كاشير، فني صيانة، محاسب، مسؤول المخزن — وتقدر تعدّل أي دور أو تعمل دور جديد.</figcaption></figure>
+  <ul>
+    <li>تقدر تحدد بالظبط: مين يعمل خصم وأقصى نسبة، مين يشوف التكلفة والربح، مين يعمل مرتجع أو إلغاء، مين يعدّل الأسعار، مين يستورد بيانات...</li>
+    <li><b>إيقاف موظف</b> ساب الشغل بدل حذفه — كل عملياته القديمة بتفضل مسجلة باسمه.</li>
+    <li>عدد المستخدمين المسموح بيعتمد على نوع الترخيص.</li>
+  </ul>
+  <figure><img src="img/55-settings-audit.jpg" alt=""><figcaption><b>سجل النشاط:</b> كل عملية مهمة — مين عملها وإمتى وعلى إيه (بيع، إلغاء، تعديل سعر، تسوية مخزون، دخول...). محدش يقدر يمسحه.</figcaption></figure>
+</section>
+
+<!-- ───────────── 14 ───────────── -->
+<section class="chapter" id="c14">
+  <h2><span class="no">14</span> النسخ الاحتياطي والنقل لجهاز جديد</h2>
+  <div class="box danger"><span class="t">أهم فصل في الكتيب</span>
+    الجهاز ممكن يتسرق أو الهارد يبوظ في أي لحظة. النسخة الاحتياطية على <b>فلاشة أو هارد خارجي</b> هي اللي بترجّعلك محلك كله في دقايق.</div>
+  <p><span class="path">الإعدادات ← النسخ الاحتياطي</span></p>
+  <figure><img src="img/56-backup-now.jpg" alt=""><figcaption><b>النسخ الاحتياطي:</b> آخر نسخة وحالتها، «نسخة احتياطية الآن»، «استرجاع من ملف»، والنسخ التلقائي، ومكان النسخة الإضافية.</figcaption></figure>
+  <ul>
+    <li><b>نسخ تلقائي</b> كل 24 ساعة (تقدر تغيرها) <b>وعند قفل البرنامج</b>، وبيحتفظ بآخر 14 نسخة.</li>
+    <li>قبل أي تحديث للبرنامج بيعمل نسخة لوحده.</li>
+    <li><b>نسخة إضافية على فلاشة / هارد خارجي:</b> اختار المجلد في «مكان حفظ النسخ»، وكل نسخة بتتنسخ هناك كمان. <b>ننصح بيه جداً.</b></li>
+    <li>كل النسخ <b>مشفّرة</b> بكلمة مرور النسخ الاحتياطي — لو الفلاشة ضاعت محدش يقدر يفتحها.</li>
+    <li><b>فحص:</b> بيتأكد إن النسخة سليمة من غير ما يغيّر أي حاجة.</li>
+  </ul>
+  <h3>الاسترجاع</h3>
+  <ol class="steps">
+    <li><b>استرجاع من ملف</b> ← اختار ملف النسخة ← اكتب كلمة مرور النسخ الاحتياطي.</li>
+    <li>البرنامج بيعمل نسخة أمان من بياناتك الحالية الأول، وبعدين يبدّلها بالنسخة ويعيد التشغيل.</li>
+    <li>لو النور قطع وسط الاسترجاع، البرنامج بيرجع بياناتك القديمة سليمة أول ما يفتح.</li>
+  </ol>
+  <h3>النقل لجهاز جديد</h3>
+  <ol class="steps">
+    <li>على الجهاز القديم: <span class="path">النسخ الاحتياطي ← حفظ ملف النقل</span> (ملف بامتداد <span class="ltr">.centralbundle</span>) على فلاشة.</li>
+    <li>على الجهاز الجديد: ثبّت البرنامج ← في أول شاشة اختار <b>«استرجاع من نسخة احتياطية»</b> ← اختار الملف ← كلمة مرور النسخ الاحتياطي.</li>
+    <li>الجهاز الجديد له <b>كود طلب جديد</b> — ابعته للمورد عشان يبعتلك مفتاح تفعيل للجهاز ده (الفصل 15).</li>
+  </ol>
+  <div class="box tip"><span class="t">عادة أسبوعية بسيطة</span>
+    كل أسبوع: دخّل الفلاشة واضغط «نسخة احتياطية الآن»، وشيل الفلاشة في البيت. كده بياناتك في مكانين.</div>
+</section>
+
+<!-- ───────────── 15 ───────────── -->
+<section class="chapter" id="c15">
+  <h2><span class="no">15</span> التفعيل</h2>
+  <figure><img src="img/53-settings-license.jpg" alt=""><figcaption><b>الترخيص:</b> حالة التجربة والأيام الباقية، <b>كود الطلب</b> للجهاز ده وزر «نسخ الكود»، وخانة <b>مفتاح التفعيل</b>.</figcaption></figure>
+  <ol class="steps">
+    <li>أول <b>15 يوم تجربة</b> بكل المميزات. الأيام الباقية ظاهرة دايماً في الشريط اللي فوق.</li>
+    <li>افتح <span class="path">الإعدادات ← الترخيص</span> (أو الشاشة اللي بتظهر لوحدها بعد التجربة) واضغط <b>نسخ الكود</b>.</li>
+    <li>ابعت <b>كود الطلب</b> للمورد (واتساب مثلاً). هيبعتلك <b>مفتاح تفعيل</b> خاص بجهازك.</li>
+    <li>الصق المفتاح في الخانة واضغط <b>تفعيل</b>. خلاص — من غير إنترنت.</li>
+  </ol>
+  <div class="box note"><span class="t">بياناتك في أمان دايماً</span>
+    لو التجربة أو الترخيص خلص، البرنامج بيعرض شاشة التفعيل بس — <b>عمره ما بيمسح بياناتك</b>، وتقدر تعمل نسخة احتياطية من نفس الشاشة.</div>
+  <ul>
+    <li>المفتاح شغال على <b>الجهاز ده بس</b>. لو غيرت الجهاز أو نزّلت ويندوز جديد، الكود بيتغير وهتحتاج مفتاح جديد.</li>
+    <li>الترخيص السنوي ليه 3 أيام سماح بعد ما يخلص.</li>
+    <li>متغيّرش تاريخ الجهاز: لو اتقدم بالغلط، البرنامج ممكن يحسب التجربة خلصت. الحل مفتاح جديد من المورد، والبيانات سليمة.</li>
+  </ul>
+  <table>
+    <tr><th>نوع الترخيص</th><th>عدد المستخدمين</th></tr>
+    <tr><td>أساسي (BASIC)</td><td>حتى 3</td></tr>
+    <tr><td>احترافي (PROFESSIONAL)</td><td>حتى 15</td></tr>
+    <tr><td>مؤسسات (ENTERPRISE)</td><td>من غير حد عملي</td></tr>
+  </table>
+</section>
+
+<!-- ───────────── 16 ───────────── -->
+<section class="chapter" id="c16">
+  <h2><span class="no">16</span> مشاكل شائعة وحلولها</h2>
+  <table>
+    <tr><th style="width:36%">المشكلة</th><th>الحل</th></tr>
+    <tr><td>القارئ مش بيضيف الصنف</td><td>اتأكد إن الباركود متسجل على الصنف، وإن المؤشر في خانة البحث (<kbd>F2</kbd>). جرّب تكتب الرقم بإيدك.</td></tr>
+    <tr><td>«الطابعة غير متاحة»</td><td>اتأكد إنها شغالة ومتوصلة ومختارة في <span class="path">الإعدادات ← الطابعات</span>، واضغط «صفحة تجربة». البيع اتسجل عادي — اطبع من سجل المبيعات.</td></tr>
+    <tr><td>الإيصال طالع طويل أو مقصوص</td><td>اختار مقاس الورق الصح (58 أو 80 مم) في إعدادات الطابعات.</td></tr>
+    <tr><td>نسيت الـ PIN</td><td>ادخل بكلمة المرور، أو المالك يغيرهولك من <span class="path">المستخدمين</span>.</td></tr>
+    <tr><td>نسيت كلمة مرور المالك</td><td>لو فيه مدير تاني بصلاحية المستخدمين يغيرها. غير كده كلم المورد.</td></tr>
+    <tr><td>«كلمة مرور النسخة غير صحيحة»</td><td>النسخ القديمة بتفضل بكلمة المرور اللي اتعملت بيها وقتها — جرّب القديمة.</td></tr>
+    <tr><td>«النسخ التلقائي متوقف على الجهاز ده»</td><td>اكتب كلمة مرور النسخ الاحتياطي مرة واحدة في نفس الشاشة.</td></tr>
+    <tr><td>«المساحة على الجهاز خلصت»</td><td>امسح ملفات مش محتاجها أو انقل النسخ الاحتياطية القديمة للفلاشة. بياناتك ما اتأثرتش.</td></tr>
+    <tr><td>«عدد المستخدمين وصل للحد»</td><td>نوع الترخيص بيحدد العدد — أوقف موظف مش بيشتغل، أو كلم المورد لترقية الترخيص.</td></tr>
+    <tr><td>مش لاقي زرار معين</td><td>غالباً صلاحيتك مش بتسمح. اسأل المالك يراجع دورك في <span class="path">الأدوار والصلاحيات</span>.</td></tr>
+  </table>
+
+  <div class="keep">
+  <h3>روتين يومي مقترح</h3>
+  <div class="grid2">
+  </div>
+    <div class="box note" style="margin:0"><span class="t">أول اليوم</span>
+      <ul style="margin:0"><li>ادخل بالـ PIN.</li><li>افتح الوردية واكتب الفكة.</li><li>بص على تنبيهات الرئيسية (نواقص، صيانة متأخرة).</li></ul></div>
+    <div class="box tip" style="margin:0"><span class="t">آخر اليوم</span>
+      <ul style="margin:0"><li>سلّم الأجهزة الجاهزة أو كلّم أصحابها.</li><li>اقفل الوردية وعدّ الدرج.</li><li>اقفل البرنامج (بيعمل نسخة احتياطية لوحده).</li></ul></div>
+  </div>
+
+  <figure class="half" style="margin-top:18px"><img src="img/58-lock.jpg" alt=""><figcaption><b>قفل الشاشة:</b> وأنت سايب الجهاز اضغط «قفل» — والشغل المفتوح بيفضل زي ما هو.</figcaption></figure>
+  <div class="box note"><span class="t">الدعم الفني</span>
+    ابعت للمورد صورة من الشاشة ورقم الإصدار (من <span class="path">الإعدادات ← هذا الجهاز</span>).</div>
+</section>
+
+</main>
+</body>
+</html>

@@ -26,6 +26,7 @@
     "license:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts verify",
     "license:list": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts list",
     "release:check": "node scripts/release-check.mjs",
+    "docs:booklet": "node scripts/manual/build-booklet.mjs",
     "test:perf": "vitest run --config vitest.perf.config.ts"
   },
   "dependencies": {

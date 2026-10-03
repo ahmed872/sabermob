@@ -49,7 +49,8 @@ If `npm install` cannot download Electron (corporate proxy), see
 
 | Document | For |
 | --- | --- |
-| [docs/USER_MANUAL_AR.md](docs/USER_MANUAL_AR.md) | دليل الاستخدام لصاحب المحل والموظفين (عربي) |
+| [docs/manual/Central-Pro-User-Guide-AR.pdf](docs/manual/Central-Pro-User-Guide-AR.pdf) | **كتيب الاستخدام المصوّر** (PDF، 39 صفحة) — `npm run docs:booklet` يعيد بناءه |
+| [docs/USER_MANUAL_AR.md](docs/USER_MANUAL_AR.md) | دليل الاستخدام المختصر (عربي) |
 | [docs/LICENSING_VENDOR_GUIDE.md](docs/LICENSING_VENDOR_GUIDE.md) | The vendor: trial, activation keys, key safety (Arabic + English) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the app is built, security model, main decisions |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setting up, coding conventions, tests |

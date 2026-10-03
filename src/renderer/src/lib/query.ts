@@ -4,10 +4,12 @@ import type { ApiInput, ApiMethod, ApiOutput } from '@shared/ipc/contract'
 import i18n from '../i18n'
 import { ApiError, call, callWithOverride } from './api'
 
+// Every call goes over local IPC, never the network: 'always' keeps queries and
+// mutations running when the PC has no internet (the default 'online' mode pauses them).
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: false, refetchOnWindowFocus: false, staleTime: 15_000 },
-    mutations: { retry: false }
+    queries: { retry: false, refetchOnWindowFocus: false, staleTime: 15_000, networkMode: 'always' },
+    mutations: { retry: false, networkMode: 'always' }
   }
 })
 
