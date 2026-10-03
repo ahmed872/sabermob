@@ -36,6 +36,18 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: ربط مفتاح التفعيل بالبرنامج (من الـ Secret)
+        shell: bash
+        env:
+          LICENSE_PRIVATE_KEY: ${{ secrets.LICENSE_PRIVATE_KEY }}
+        run: |
+          # Embed the public half of the vendor's signing secret, so released builds
+          # always accept the keys issued by "توليد مفتاح تفعيل".
+          if [ -z "$LICENSE_PRIVATE_KEY" ]; then echo "No LICENSE_PRIVATE_KEY secret: using the committed public key"; exit 0; fi
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s' "$LICENSE_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
+          CENTRAL_LICENSE_KEY_DIR="$RUNNER_TEMP/keys" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts public-key --write
+          rm -rf "$RUNNER_TEMP/keys"
       - run: npm run release:check
       - run: npm run typecheck
       - run: npm test
@@ -58,6 +70,18 @@ jobs:
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
       - run: npm ci
+      - name: ربط مفتاح التفعيل بالبرنامج (من الـ Secret)
+        shell: bash
+        env:
+          LICENSE_PRIVATE_KEY: ${{ secrets.LICENSE_PRIVATE_KEY }}
+        run: |
+          # Embed the public half of the vendor's signing secret, so released builds
+          # always accept the keys issued by "توليد مفتاح تفعيل".
+          if [ -z "$LICENSE_PRIVATE_KEY" ]; then echo "No LICENSE_PRIVATE_KEY secret: using the committed public key"; exit 0; fi
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s' "$LICENSE_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
+          CENTRAL_LICENSE_KEY_DIR="$RUNNER_TEMP/keys" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts public-key --write
+          rm -rf "$RUNNER_TEMP/keys"
       - run: npm run release:check
       - run: npm run build
 

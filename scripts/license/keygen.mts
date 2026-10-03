@@ -12,7 +12,7 @@
  * The private key lives in ./license-keys/ — keep it secret and back it up.
  * If you lose it you cannot issue keys for installed copies.
  */
-import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from 'node:crypto'
+import { createPrivateKey, createPublicKey, generateKeyPairSync, scryptSync, sign, verify, type KeyObject } from 'node:crypto'
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -52,11 +52,34 @@ function fail(msg: string): never {
   process.exit(1)
 }
 
+/**
+ * The signing key is either an Ed25519 PEM (from `init`) or any secret text
+ * (e.g. a long passphrase saved as the LICENSE_PRIVATE_KEY secret), which is
+ * stretched with scrypt into an Ed25519 key. The same text always gives the
+ * same key, so it must be long and random: anyone who guesses it can issue keys.
+ */
+export function keyFromSecret(raw: string): KeyObject {
+  try {
+    const pem = createPrivateKey(raw)
+    if (pem.asymmetricKeyType === 'ed25519') return pem
+  } catch {
+    /* not a PEM key: treat as secret text */
+  }
+  const secret = raw.trim()
+  if (secret.length < 12) fail('The license secret is too short (use at least 20 random characters).')
+  const seed = scryptSync(secret, 'central-pro:license-signing-key:v1', 32, { N: 1 << 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 })
+  // PKCS#8 wrapper for a raw Ed25519 seed
+  const der = Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), seed])
+  return createPrivateKey({ key: der, format: 'der', type: 'pkcs8' })
+}
+
 function loadPrivateKey(useDev: boolean) {
   const file = useDev ? DEV_PRIVATE_KEY : PRIVATE_KEY
   if (!existsSync(file)) fail(`Private key not found at ${file}. Run "init" first.`)
-  return createPrivateKey(readFileSync(file, 'utf8'))
+  return keyFromSecret(readFileSync(file, 'utf8'))
 }
+
+const publicPem = (k: KeyObject) => (createPublicKey(k).export({ type: 'spki', format: 'pem' }) as string).trim()
 
 function nextSerial(): number {
   if (!existsSync(LEDGER)) return 1
@@ -105,7 +128,7 @@ switch (command) {
     if (!useDev) {
       // A key signed by a different private key would never activate the shipped app.
       const shipped = readFileSync(PUBLIC_KEY_TS, 'utf8').match(/`([\s\S]+)`/)![1]!.trim()
-      const mine = (createPublicKey(privateKey).export({ type: 'spki', format: 'pem' }) as string).trim()
+      const mine = publicPem(privateKey)
       if (shipped !== mine) fail('This private key does not match the public key built into the app (src/main/license/public-key.ts). Keys made with it would be rejected.')
     }
     const signature = sign(null, Buffer.from(signingMessage(payload)), privateKey)
@@ -158,6 +181,16 @@ switch (command) {
     const machineOk = Buffer.from(payload.machineId).equals(Buffer.from(machineId))
     console.log({ signatureValid: ok, machineMatches: machineOk, tier: payload.tier, issuedAt: payload.issuedAt, validDays: payload.validDays, serial: payload.serial })
     process.exit(ok && machineOk ? 0 : 2)
+    break
+  }
+  case 'public-key': {
+    // Public half of the signing key (safe to show). --write embeds it in the app.
+    const pem = publicPem(loadPrivateKey(false))
+    if (opts.write === 'true') {
+      writePublicKeyModule(pem + '\n')
+      console.log('✔ Public key written into src/main/license/public-key.ts')
+    }
+    console.log(pem)
     break
   }
   case 'list': {

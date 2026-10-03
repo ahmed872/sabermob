@@ -68,8 +68,27 @@ jobs:
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s\n' "$LICENSE_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
+          printf '%s' "$LICENSE_PRIVATE_KEY" > "$RUNNER_TEMP/keys/private-key.pem"
           chmod 600 "$RUNNER_TEMP/keys/private-key.pem"
+
+      - name: المفتاح العام (آمن للعرض)
+        env:
+          CENTRAL_LICENSE_KEY_DIR: ${{ runner.temp }}/keys
+        run: |
+          PUB="$(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts public-key)"
+          echo "$PUB"
+          if ! grep -q "$(echo "$PUB" | sed -n 2p)" src/main/license/public-key.ts; then
+            {
+              echo '## ⚠️ المفتاح السري مختلف عن المفتاح المبني في البرنامج'
+              echo 'المفاتيح اللي هتطلع منه مش هتشتغل على النسخ القديمة. شغّل **بناء نسخة ويندوز** (بيربط مفتاحك أوتوماتيك) ووزّع النسخة الجديدة.'
+              echo ''
+              echo '```'
+              echo "$PUB"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Secret does not match src/main/license/public-key.ts"
+            exit 1
+          fi
 
       - name: إصدار مفتاح التفعيل
         env:
