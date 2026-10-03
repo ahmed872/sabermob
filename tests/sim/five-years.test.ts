@@ -78,6 +78,7 @@ let t: TestApp
 let OWNER: ReturnType<typeof actor>
 let CASHIER: ReturnType<typeof actor>
 let STATUS: Record<string, string> = {}
+let CASHIER_LOGIN = { username: 'cashier', secret: 'cashier-pass-1', method: 'PASSWORD' as const }
 
 const add = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) ?? 0) + v)
 const time = async <T,>(fn: () => Promise<T>): Promise<[T, number]> => {
@@ -436,7 +437,7 @@ async function yearCheckpoint(day: number) {
   row['Restart app (ms)'] = reopenMs
   await t.app.auth.login({ username: 'owner', secret: 'owner-pass-1', method: 'PASSWORD' })
   OWNER = actor(t)
-  await t.app.auth.login({ username: 'cashier', secret: 'cashier-pass-1', method: 'PASSWORD' })
+  await t.app.auth.login(CASHIER_LOGIN)
   CASHIER = actor(t)
   await t.app.backup.unlock('backup-pass-1', OWNER.userId)
 
@@ -526,7 +527,8 @@ it(`runs a mobile shop for ${DAYS} days`, async () => {
     if (day === 800) {
       setNow(at(day, 9, 41))
       await t.app.users.update({ id: cashierUser.id, isActive: false }, OWNER)
-      await t.app.auth.login({ username: 'cashier2', secret: 'cashier-pass-2', method: 'PASSWORD' })
+      CASHIER_LOGIN = { username: 'cashier2', secret: 'cashier-pass-2', method: 'PASSWORD' }
+      await t.app.auth.login(CASHIER_LOGIN)
       CASHIER = actor(t)
     }
 
