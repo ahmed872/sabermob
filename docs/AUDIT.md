@@ -274,3 +274,46 @@ were fixed and re-tested.
 **after the two operational blockers in §17 are done** — make the repository private and store the
 production private key as a secret with offline copies. Before broad sale: test once with the actual
 thermal printer and barcode scanner models used by customers, and consider a code-signing certificate.
+
+---
+
+## Addendum (1.0.2): five-year simulation
+
+`npm run test:sim` (tests/sim/five-years.test.ts) runs a busy shop for 1,826 days through the real
+services with the clock moved forward in **Africa/Cairo** (10 clock changes, leap day 2028, five year
+ends, sales after midnight inside the same shift). It keeps independent books and compares them with
+the app: every shift's expected drawer cash, stock of every item, every customer and supplier
+balance, monthly sales reports, and the dashboard on clock-change days, leap day and New Year's Eve.
+
+**Final run (seed 20261003): 82,781 sales, 3,822 repairs, 1,528 purchases, 989 refunds, 247 voids,
+809 debt collections, 20 bulk price imports, staff changes, a licence that lapses and is renewed —
+0 mismatches.**
+
+| At year 5 (DB 312 MB) | ms |
+| --- | --- |
+| Complete a sale (p50 / p95) | 9 / 23 |
+| POS search by name / barcode | 1–2 / ≤1 |
+| Dashboard | 17 |
+| Sales report, 12 months | 190 |
+| Sales history page / search | 34 / 114 |
+| Customers page / by phone | 56 / 6 |
+| Global search | 81 |
+| Backup (66 MB encrypted) | 9,000 |
+| App restart | 352 |
+
+Found and fixed by the simulation:
+
+| # | Problem | Fix |
+| --- | --- | --- |
+| S1 | Dashboard "today", yesterday, the 14-day chart and day ranges added 24 h to midnight; on Egypt's 23-hour day sales after midnight were counted in the previous day (seen: 30 Apr 2027) | `src/shared/dates.ts` steps calendar days; used by reports and the renderer |
+| S2 | A purchase paid in cash could exceed the drawer (supplier payments were already checked): expected cash went negative, petty cash was then refused and closing showed a false surplus | Same check; new `INSUFFICIENT_CASH` error with the available amount |
+| S3 | Unclaimed repaired phones stayed on the board forever (≈25/year); cancelling returned the fitted parts to stock | Built-in final status **«لم يُستلم»**: off the board, parts and deposit kept, still deliverable |
+| S4 | Repair board silently showed only the newest 200 open devices | Notice with the real total |
+| S5 | Dashboard alerts opened unfiltered lists | Alerts open the filtered list (out, low, overdue, ready) |
+| S6 | Screens stopped refreshing when Windows reported no network (React Query "online" mode) | `networkMode: 'always'` — all calls are local |
+
+Observations (no change needed now): the backups folder reaches ~1.1 GB at year 5 with the default
+14 copies (lower the count or use an external drive on small disks); a cashier without the credit
+permission needs the owner's PIN about once a day for credit sales (grant the permission if that is
+too often); 50–90 slow-moving items accumulate as dead stock, which the dashboard and the
+Clearance offer already surface.
