@@ -12,10 +12,10 @@ Node.js 22+ (24 recommended). On Windows no build tools are needed (SQLite drive
 
 ### Electron download fails
 
-Behind some proxies Electron's postinstall download fails. Download the matching zip manually
-(`electron-v<version>-<platform>-x64.zip` from the Electron GitHub releases), unzip it into
-`node_modules/electron/dist`, and write the executable name into `node_modules/electron/path.txt`
-(`electron.exe` on Windows, `electron` on Linux).
+Electron 44 downloads its binary the first time it is used (`npm run dev`, tests), not during
+`npm install`. Behind a proxy that blocks it, download `electron-v<version>-<platform>-x64.zip` from the
+Electron GitHub releases, unzip it into `node_modules/electron/dist`, and write the executable name into
+`node_modules/electron/path.txt` (`electron.exe` on Windows, `electron` on Linux).
 
 ### Data folder in development
 
@@ -33,10 +33,13 @@ CENTRAL_DATA_DIR=./.dev/data npm run dev
 | `npm run test:unit` | pure logic: money, pricing, offers engine, license codec |
 | `npm run test:integration` | services and IPC router against a real SQLite DB in a temp folder |
 | `npm run test:e2e` | builds, then drives the real Electron app with Playwright |
-| `npx playwright test --config tests/e2e/packaged.config.ts` | smoke test of `dist/linux-unpacked` (after `npm run dist:linux`) |
+| `npx playwright test --config tests/e2e/packaged.config.ts` | smoke test of the packaged app (`dist/linux-unpacked` or `dist/win-unpacked`, or `CENTRAL_APP_EXE`) |
+| `npm run test:perf` | stress dataset (10k products, 125k sale lines, 10k customers, 5k repairs) with timings |
 
 On Linux CI use `xvfb-run -a` for Playwright. E2E tests set `CENTRAL_DATA_DIR` (fresh folder per
 test) and `CENTRAL_E2E_PDF_DIR` (PDF/export/bundle output without save dialogs).
+
+CI (`.github/workflows/ci.yml`) runs typecheck, unit/integration and E2E on every push.
 
 Integration tests use `tests/helpers/app.ts`: `createTestApp()` builds a full `AppContext` with a
 fake license platform and a controllable clock; `setupOwner()` onboards and signs in.

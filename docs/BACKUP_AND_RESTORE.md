@@ -54,8 +54,12 @@ repairs, suppliers, users) and records `verifiedAt`.
 2. Rejected before anything changes if: wrong password, tampered/corrupt file (GCM tag),
    integrity check fails, or the backup comes from a newer app version.
 3. A **pre-restore backup** of the current data is made (listed as “Before restore” afterwards).
-4. The DB gate is taken for good, the database and media folder are swapped atomically (rename),
-   the key is stored locally, and the app restarts. The restore is written to the audit log.
+4. The DB gate is taken for good and a **restore journal** is written; the database and media folder
+   are swapped by rename; the key is stored locally; the saved in-progress cart is cleared; the app
+   restarts and the restore is written to the audit log.
+   - If a rename fails (e.g. a file locked by antivirus), the old files are put back immediately.
+   - If power is lost in the middle of the swap, the next start finds the journal and puts the old
+     data back before opening the database (nothing is lost; restore again).
 
 Available in Settings → Backup, on the expired-license screen (backup), and on the very first screen
 of a fresh install (“Restore from backup”) for moving to a new PC.

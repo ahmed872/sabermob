@@ -13,7 +13,28 @@
 
 المفتاح موقّع رقمياً بمفتاحك الخاص (Ed25519)، ومربوط بجهاز العميل؛ ميشتغلش على جهاز تاني ومحدش يقدر يزوّره.
 
-## أول مرة فقط: إنشاء مفتاحك الخاص
+## الطريقة الأسهل: من GitHub (من الموبايل كمان)
+
+1. **مرة واحدة:** افتح ملف `private-key.pem` (اللي استلمته)، انسخ محتواه كله، وضيفه في
+   **Settings ← Secrets and variables ← Actions ← New repository secret**
+   - الاسم: `LICENSE_PRIVATE_KEY`
+   - القيمة: محتوى الملف كامل (من `-----BEGIN PRIVATE KEY-----` لحد `-----END PRIVATE KEY-----`)
+2. كل ما عميل يبعتلك كود طلب: **Actions ← توليد مفتاح تفعيل ← Run workflow**
+   - الصق **كود الطلب**، اختار **نوع الترخيص** و**المدة**، واضغط **Run workflow**.
+3. بعد حوالي 10 ثواني افتح التشغيل ← هتلاقي **مفتاح التفعيل** في الملخص، جاهز تنسخه وتبعته.
+
+الأداة بترفض تطلع مفتاح لو المفتاح السري مش مطابق للمفتاح المبني جوه البرنامج (عشان متبعتش مفتاح مش هيشتغل).
+
+> ⚠️ **المستودع لازم يكون خاص (Private).** في مستودع عام أي حد يقدر يشوف الكود ويبني نسخة بمفتاحه هو ويتخطى التفعيل،
+> ويشوف سجل التشغيلات (أكواد الطلب وأي اسم عميل تكتبه). المفاتيح نفسها مربوطة بجهاز واحد فمش خطر لو اتشافت.
+> من **Settings ← General ← Danger Zone ← Change visibility ← Private**.
+
+## الطريقة اليدوية (على جهازك)
+
+### أول مرة فقط: إنشاء مفتاحك الخاص
+
+> ✅ **المفتاح ده اتعمل بالفعل** والمفتاح العام بتاعه مبني جوه البرنامج (`src/main/license/public-key.ts`).
+> **متشغلش `license:init` تاني** إلا لو المفتاح السري اتسرق — لأن أي مفتاح جديد بيخلي كل المفاتيح القديمة متشتغلش في النسخ الجديدة.
 
 على جهازك أنت (جهاز آمن، مش جهاز عميل):
 
@@ -35,7 +56,7 @@ npm run license:init
 - **لو اتسرق:** أي حد يقدر يعمل مفاتيح. اعمل `license:init` جديد ووزّع نسخة جديدة.
 - المجلد ده متجاهَل في Git (`.gitignore`) — متشيلوش من التجاهل أبداً.
 
-## إصدار مفتاح لعميل
+### إصدار مفتاح لعميل
 
 ```bash
 npm run license:issue -- --request 7K3Q-9XWM-2PDA-HF6R --customer "سنترال الأمل - المعادي"
@@ -60,6 +81,8 @@ npm run license:verify -- --request XXXX-XXXX-XXXX-XXXX --key "<المفتاح>"
 
 ## أسئلة متكررة
 
+- **العميل غلط في تاريخ الجهاز وخلاه سنة قدام وبعدين صلّحه؟** البرنامج بيحتفظ بآخر وقت شافه، فالتجربة أو الترخيص المؤقت ممكن يخلص بدري. الترخيص **مدى الحياة مش بيتأثر**. الحل: مفتاح جديد لنفس كود الطلب — البيانات سليمة.
+
 - **العميل غيّر الجهاز أو الويندوز؟** كود الطلب هيتغير. اعمل له مفتاح جديد للكود الجديد. بياناته بتتنقل بملف النقل (`.centralbundle`) أو نسخة احتياطية.
 - **ترخيص سنوي خلص؟** البرنامج بيدي 3 أيام سماح ثم يعرض شاشة التفعيل. اعمل مفتاح جديد بنفس كود الطلب.
 - **حد رجّع تاريخ الجهاز لورا عشان يطوّل التجربة؟** مش هيستفيد: البرنامج بيحتفظ بآخر وقت شافه (مختوم ضد التعديل) وبيحسب منه.
@@ -81,7 +104,15 @@ refuses to build while the development key is still embedded (`scripts/release-c
 **Keep `license-keys/` safe and backed up offline.** Lost → you cannot license copies already sold.
 Leaked → anyone can mint keys; rotate with a new `license:init` and ship a new build.
 
-**Issue:** `npm run license:issue -- --request XXXX-XXXX-XXXX-XXXX [--tier BASIC|PROFESSIONAL|ENTERPRISE] [--days 0|365] [--customer "Name"]`.
+**From GitHub Actions:** store the private key PEM as repository secret `LICENSE_PRIVATE_KEY`, then
+*Actions → توليد مفتاح تفعيل → Run workflow* (request code, tier, duration). The key appears in the run
+summary. Keep the repository **private**: a public repo exposes the source (anyone can build an
+unlicensed copy with their own key) and the run history.
+
+**Clock set forward by mistake:** the app keeps the latest time it has seen, so a trial or timed license
+can end early; lifetime licenses are unaffected; issue a new key — data is untouched.
+
+**Issue locally:** `npm run license:issue -- --request XXXX-XXXX-XXXX-XXXX [--tier BASIC|PROFESSIONAL|ENTERPRISE] [--days 0|365] [--customer "Name"]`.
 User limits: BASIC 3, PROFESSIONAL 15, ENTERPRISE 1000 (trial 10).
 Timed licenses get a 3-day grace period. Every key is logged in `license-keys/issued-keys.csv`.
 

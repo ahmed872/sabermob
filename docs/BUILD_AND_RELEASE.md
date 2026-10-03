@@ -1,22 +1,42 @@
 # Build, release and deployment
 
-## One-time (vendor)
+## Release from GitHub (recommended)
 
-1. `npm run license:init` — creates your private signing key (see
-   [LICENSING_VENDOR_GUIDE.md](LICENSING_VENDOR_GUIDE.md)) and embeds the public key. Back up `license-keys/`.
-2. Set the version in `package.json` (`"version": "1.1.0"`).
+The workflow `.github/workflows/build-windows.yml` builds on a real Windows machine and, before
+publishing anything, verifies the installer:
 
-## Build the Windows installer
+1. tests (typecheck, unit/integration) and the release check (production license key embedded);
+2. `electron-builder --win` → `Central-Pro-Setup-<version>.exe` (NSIS, x64);
+3. runs the packaged app (first launch, product, sale, encrypted backup with Windows DPAPI);
+4. **silent install** → runs the installed copy → **silent uninstall**, failing if the program stays or
+   if `%APPDATA%\Central Pro` (business data) is removed;
+5. uploads the installer + blockmap as an artifact and publishes a GitHub Release with notes and SHA-256.
+
+To release a version:
 
 ```bash
+# bump "version" in package.json (e.g. 1.0.1), commit, then:
+git tag v1.0.1
+git push origin v1.0.1          # → Actions builds, tests and publishes the Release
+```
+
+Or *Actions → بناء نسخة ويندوز → Run workflow* (tick “publish” to create the Release). The
+installer appears under *Releases* (and as a run artifact for 30 days).
+
+## Build locally on Windows
+
+```powershell
+# Windows 10/11 x64, Node.js 24, Git
+git clone <repo> ; cd sabermob
 npm ci
-npm run dist:win        # → dist/Central-Pro-Setup-<version>.exe
+npm run dist:win                 # release check → build → dist\Central-Pro-Setup-<version>.exe
+npx playwright test --config tests/e2e/packaged.config.ts   # optional: smoke test dist\win-unpacked
 ```
 
 `dist:win` runs `scripts/release-check.mjs` first: it **refuses to build** while the development
-license key is embedded. Run it on Windows (or on Linux/macOS with Wine installed — NSIS needs it to
-build the uninstaller). The SQLite driver ships Node-API prebuilds for every platform, so no native
-compilation happens and no Visual Studio is needed.
+license key is embedded. No Visual Studio / Python is needed: the SQLite driver ships Node-API prebuilds
+for every platform (`better-sqlite3/prebuilds/win32-x64.node` is packaged), so no native compilation
+happens. On Linux/macOS the Windows app folder builds, but the NSIS step needs Wine.
 
 Configuration: `electron-builder.config.cjs`.
 
@@ -46,14 +66,21 @@ downloaded or installed unless the owner asks; the installer's sha512 (and signa
 verified by electron-updater; a `PRE_UPDATE` backup is made just before installing. Only that server
 is reachable from the app; the UI itself stays fully offline.
 
+## Repository visibility
+
+Keep the repository **private** before selling: a public repository exposes the full source (anyone
+can build a copy with their own license key and bypass activation) and the Actions history. GitHub
+free private repositories include 2,000 Actions minutes per month (Windows minutes count double; one
+Windows build takes about 5 minutes).
+
 ## Pre-release checklist
 
 ```bash
 npm run typecheck
 npm test                    # unit + integration
 npm run test:e2e            # real app (xvfb-run -a on Linux CI)
-npm run dist:linux && npx playwright test --config tests/e2e/packaged.config.ts   # packaged smoke test
-npm run dist:win
+npm run test:perf            # stress dataset timings
+git tag vX.Y.Z && git push origin vX.Y.Z   # Windows build + install/uninstall test + Release
 ```
 
 Then on a clean Windows PC: install, onboard, sell, print a receipt, back up, restore, activate with a

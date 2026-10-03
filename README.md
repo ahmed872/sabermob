@@ -30,11 +30,20 @@ If `npm install` cannot download Electron (corporate proxy), see
 | `npm run typecheck` | TypeScript checks (main, renderer, scripts) |
 | `npm test` | Unit + integration tests (Vitest, real SQLite) |
 | `npm run test:e2e` | Build, then end-to-end tests of the real Electron app (Playwright) |
+| `npm run test:perf` | Stress dataset (10k products, 125k sale lines) with timings |
 | `npm run db:migration -- <name>` | Create the next SQL migration after editing `prisma/schema.prisma` |
 | `npm run dist:win` | Release check + Windows installer in `dist/` |
 | `npm run dist:linux` | Unpacked Linux build (used for packaged smoke tests) |
 | `npm run license:init` | **Vendor, once:** create your private signing key |
 | `npm run license:issue -- --request XXXX-XXXX-XXXX-XXXX` | **Vendor:** issue an activation key |
+
+## Release & activation keys (GitHub Actions)
+
+| Workflow | What it does |
+| --- | --- |
+| **بناء نسخة ويندوز** | On tag `v*` (or manually): tests → Windows installer → runs, installs and uninstalls it on Windows → GitHub Release |
+| **توليد مفتاح تفعيل** | Issue an activation key from a request code (needs the `LICENSE_PRIVATE_KEY` secret) |
+| **فحص الكود** | Typecheck, unit/integration and E2E tests on every push |
 
 ## Documentation
 
@@ -48,6 +57,7 @@ If `npm install` cannot download Electron (corporate proxy), see
 | [docs/BACKUP_AND_RESTORE.md](docs/BACKUP_AND_RESTORE.md) | Backup format, restore, moving to a new PC |
 | [docs/BUILD_AND_RELEASE.md](docs/BUILD_AND_RELEASE.md) | Packaging, signing, updates, deployment |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common problems and fixes |
+| [docs/AUDIT.md](docs/AUDIT.md) | Final commercial audit: what was verified, findings, fixes, remaining risks |
 
 ## Project layout
 

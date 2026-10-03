@@ -216,6 +216,16 @@ describe('failure atomicity', () => {
     expect((await call('qr.resolve', { text: 'CP1:S:not-a-sale:AAAAAAAAAAAAAAAA' })).error?.code).toMatch(/QR_INVALID|QR_DISABLED|NOT_FOUND/)
   })
 
+  it('concurrent sales never oversell: 20 simultaneous checkouts for 10 units', async () => {
+    const v = (await t.app.catalog.createProduct({ type: 'ACCESSORY', name: 'Race item', variants: [{ sellPrice: 1000, openingStock: 10, barcodes: [] }] }, actor(t))).variants[0]!.id
+    const results = await Promise.all(Array.from({ length: 20 }, () => call('pos.complete', sale([{ variantId: v, qty: 1, unitPrice: 1000 }], [{ method: 'CASH', amount: 1000 }]))))
+    expect(results.filter((r) => r.ok)).toHaveLength(10)
+    expect(results.filter((r) => !r.ok).every((r) => r.error?.code === 'INSUFFICIENT_STOCK')).toBe(true)
+    expect(await stock(v)).toBe(0)
+    const sold = await rawQuery<{ n: number }>(t.app.db, `SELECT COALESCE(SUM(qty), 0) AS n FROM SaleItem WHERE variantId = ?`, v)
+    expect(sold[0]!.n).toBe(10)
+  })
+
   it('holds a cart and resumes it exactly once', async () => {
     const held = await t.app.sales.hold({ label: 'Customer coming back', total: 10000, payload: JSON.stringify({ lines: [{ variantId: CASE, qty: 1 }] }) }, actor(t))
     expect((await t.app.sales.listHeld()).map((h) => h.id)).toContain(held.id)
