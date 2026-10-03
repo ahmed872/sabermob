@@ -13,19 +13,20 @@ import { SearchInput, Select } from '../../components/ui/input'
 import { Badge, Card, EmptyState, PageHeader } from '../../components/ui/misc'
 import { DataTable, Pagination, type Column } from '../../components/ui/table'
 import { SaleDetailDialog, STATUS_TONE } from './sale-detail'
+import { addDays } from '@shared/dates'
 
 type Period = 'today' | 'yesterday' | 'week' | 'month' | 'all'
 
 function periodRange(p: Period): { from?: string; to?: string } {
   const today = dayRange()
-  const day = 86_400_000
+  const now = new Date()
   switch (p) {
     case 'today':
       return today
     case 'yesterday':
-      return { from: new Date(new Date(today.from).getTime() - day).toISOString(), to: today.from }
+      return { from: addDays(now, -1).toISOString(), to: today.from }
     case 'week':
-      return { from: new Date(new Date(today.from).getTime() - 6 * day).toISOString(), to: today.to }
+      return { from: addDays(now, -6).toISOString(), to: today.to }
     case 'month': {
       const d = new Date()
       return { from: new Date(d.getFullYear(), d.getMonth(), 1).toISOString(), to: today.to }

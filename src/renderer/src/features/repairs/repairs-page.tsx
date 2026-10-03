@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { AlarmClock, LayoutGrid, List, ShieldCheck, Smartphone, Wrench } from 'lucide-react'
 import type { RepairListItem, RepairStatusDto } from '@shared/types/repairs'
 import { useApi } from '../../lib/query'
-import { fmtDate, fmtMoney, fmtRelative } from '../../lib/format'
+import { fmtDate, fmtMoney, fmtNumber, fmtRelative } from '../../lib/format'
 import { cn, debounce } from '../../lib/utils'
 import { useCan } from '../../stores/app'
 import { Button } from '../../components/ui/button'
@@ -37,10 +37,17 @@ export default function RepairsPage() {
   const [search, setSearch] = useState('')
   const [statusId, setStatusId] = useState('')
   const [technicianId, setTechnicianId] = useState('')
-  const [overdue, setOverdue] = useState(false)
+  // Dashboard alerts link here with ?overdue=1 or ?status=READY
+  const [params] = useSearchParams()
+  const [overdue, setOverdue] = useState(params.get('overdue') === '1')
+  const statusKey = params.get('status')
   const [page, setPage] = useState(1)
   const debounced = useMemo(() => debounce((v: string) => (setSearch(v), setPage(1)), 200), [])
   const statuses = useApi('repairs.statuses')
+  useEffect(() => {
+    const s = statusKey ? statuses.data?.find((x) => x.key === statusKey) : undefined
+    if (s) setStatusId(s.id)
+  }, [statusKey, statuses.data])
   const techs = useApi('repairs.technicians')
   const list = useApi(
     'repairs.list',
@@ -159,6 +166,11 @@ export default function RepairsPage() {
         />
       </div>
 
+      {view === 'board' && list.data && list.data.total > list.data.items.length ? (
+        <p className="rounded-xl bg-warning-soft px-3 py-2 text-sm font-semibold text-warning">
+          {t('repairs.boardLimited', { shown: fmtNumber(list.data.items.length), total: fmtNumber(list.data.total) })}
+        </p>
+      ) : null}
       {view === 'board' ? (
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
           {boardStatuses.map((s) => {

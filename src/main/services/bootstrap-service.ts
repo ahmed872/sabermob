@@ -18,7 +18,9 @@ const REPAIR_STATUSES = [
   { key: 'TESTING', name: 'Testing', nameAr: 'اختبار', color: '#14b8a6' },
   { key: 'READY', name: 'Ready for pickup', nameAr: 'جاهز للتسليم', color: '#22c55e' },
   { key: 'DELIVERED', name: 'Delivered', nameAr: 'تم التسليم', color: '#64748b', isFinal: true },
-  { key: 'CANCELLED', name: 'Cancelled', nameAr: 'ملغي', color: '#ef4444', isFinal: true }
+  { key: 'CANCELLED', name: 'Cancelled', nameAr: 'ملغي', color: '#ef4444', isFinal: true },
+  // Off the board, parts and deposit stay as they are; still deliverable if the customer comes back.
+  { key: 'UNCLAIMED', name: 'Not collected', nameAr: 'لم يُستلم', color: '#a16207', isFinal: true }
 ] as const
 
 const ROLE_NAMES: Record<string, { en: string; ar: string }> = {

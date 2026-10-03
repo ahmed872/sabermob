@@ -42,7 +42,12 @@ describe('suppliers & purchases', () => {
     expect(await t.app.suppliers.balance(s.id)).toBe(80000)
     const shift = await t.app.shifts.summary((await t.app.shifts.currentShift())!.id)
     expect(shift.expectedCash).toBe(50000)
-    await expect(t.app.suppliers.pay({ supplierId: s.id, amount: 60000, method: 'CASH' }, actor(t))).rejects.toMatchObject({ code: 'VALIDATION' })
+    await expect(t.app.suppliers.pay({ supplierId: s.id, amount: 60000, method: 'CASH' }, actor(t))).rejects.toMatchObject({ code: 'INSUFFICIENT_CASH', details: { available: 50000 } })
+    // A purchase paid in cash follows the same rule (it used to push the drawer below zero)
+    await expect(
+      t.app.suppliers.createPurchase({ supplierId: s.id, items: [{ variantId: battery, qty: 1, unitCost: 10000 }], receiveNow: true, payment: { amount: 60000, method: 'CASH' } }, actor(t))
+    ).rejects.toMatchObject({ code: 'INSUFFICIENT_CASH' })
+    expect(await stock(battery)).toBe(20)
     await t.app.suppliers.pay({ supplierId: s.id, amount: 80000, method: 'TRANSFER' }, actor(t))
     expect(await t.app.suppliers.balance(s.id)).toBe(0)
   })

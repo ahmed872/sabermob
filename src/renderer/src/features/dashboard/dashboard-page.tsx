@@ -55,8 +55,8 @@ export default function DashboardPage() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <Stat icon={Coins} label={t('dashboard.todaySales')} value={fmtMoney(d.today.sales)} hint={`${t('dashboard.salesCount', { count: d.today.count })} · ${t('dashboard.vsYesterday', { amount: fmtMoney(d.yesterdaySales) })}`} onClick={can('view_sales') ? () => navigate('/sales/history') : undefined} />
         {d.today.profit !== null ? <Stat icon={TrendingUp} tone="success" label={t('dashboard.todayProfit')} value={fmtMoney(d.today.profit)} onClick={can('view_reports') ? () => navigate('/reports/profit') : undefined} /> : null}
-        <Stat icon={Wrench} tone="info" label={t('dashboard.pendingRepairs')} value={fmtNumber(d.pendingRepairs)} hint={d.overdueRepairs ? t('dashboard.alertOverdue', { count: d.overdueRepairs }) : undefined} onClick={can('view_repairs') ? () => navigate('/repairs') : undefined} />
-        <Stat icon={PackageMinus} tone="warning" label={t('dashboard.lowStock')} value={fmtNumber(d.lowStock + d.outOfStock)} onClick={can('view_inventory') ? () => navigate('/inventory') : undefined} />
+        <Stat icon={Wrench} tone="info" label={t('dashboard.pendingRepairs')} value={fmtNumber(d.pendingRepairs)} hint={d.overdueRepairs ? t('dashboard.alertOverdue', { count: d.overdueRepairs }) : undefined} onClick={can('view_repairs') ? () => navigate(d.overdueRepairs ? '/repairs?overdue=1' : '/repairs') : undefined} />
+        <Stat icon={PackageMinus} tone="warning" label={t('dashboard.lowStock')} value={fmtNumber(d.lowStock + d.outOfStock)} onClick={can('view_inventory') ? () => navigate(d.lowStock ? '/inventory?stock=low' : '/inventory?stock=out') : undefined} />
         {d.supplierDebt !== null ? <Stat icon={HandCoins} tone="danger" label={t('dashboard.supplierDebt')} value={fmtMoney(d.supplierDebt)} hint={d.customerDebt !== null ? `${t('dashboard.customerDebt')}: ${fmtMoney(d.customerDebt)}` : undefined} onClick={() => navigate('/suppliers')} /> : null}
       </div>
 
@@ -158,10 +158,10 @@ export default function DashboardPage() {
 
 function buildAlerts(d: DashboardData, t: (k: string, o?: Record<string, unknown>) => string) {
   const out: Array<{ text: string; to: string; icon: typeof AlertTriangle; cls: string }> = []
-  if (d.outOfStock) out.push({ text: t('dashboard.alertOut', { count: d.outOfStock }), to: '/inventory', icon: PackageX, cls: 'bg-danger-soft text-danger' })
-  if (d.lowStock) out.push({ text: t('dashboard.alertLow', { count: d.lowStock }), to: '/inventory', icon: PackageMinus, cls: 'bg-warning-soft text-warning' })
-  if (d.overdueRepairs) out.push({ text: t('dashboard.alertOverdue', { count: d.overdueRepairs }), to: '/repairs', icon: AlarmClock, cls: 'bg-danger-soft text-danger' })
-  if (d.readyRepairs) out.push({ text: t('dashboard.alertReady', { count: d.readyRepairs }), to: '/repairs', icon: CheckCircle2, cls: 'bg-success-soft text-success' })
+  if (d.outOfStock) out.push({ text: t('dashboard.alertOut', { count: d.outOfStock }), to: '/inventory?stock=out', icon: PackageX, cls: 'bg-danger-soft text-danger' })
+  if (d.lowStock) out.push({ text: t('dashboard.alertLow', { count: d.lowStock }), to: '/inventory?stock=low', icon: PackageMinus, cls: 'bg-warning-soft text-warning' })
+  if (d.overdueRepairs) out.push({ text: t('dashboard.alertOverdue', { count: d.overdueRepairs }), to: '/repairs?overdue=1', icon: AlarmClock, cls: 'bg-danger-soft text-danger' })
+  if (d.readyRepairs) out.push({ text: t('dashboard.alertReady', { count: d.readyRepairs }), to: '/repairs?status=READY', icon: CheckCircle2, cls: 'bg-success-soft text-success' })
   if (d.deadStock) out.push({ text: t('dashboard.alertDead', { count: d.deadStock }), to: '/offers', icon: Sparkles, cls: 'bg-info-soft text-info' })
   if (d.unreviewedShiftDiffs) out.push({ text: t('dashboard.alertShift', { count: d.unreviewedShiftDiffs }), to: '/sales/shifts', icon: AlertTriangle, cls: 'bg-warning-soft text-warning' })
   return out

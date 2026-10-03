@@ -22,7 +22,7 @@ export const business = {
       direction: { OUT: 'Paid to supplier', IN: 'Received from supplier' }, valueReceived: 'Value received'
     },
     repairs: {
-      title: 'Repairs', subtitle: 'Device tickets and workshop', newTicket: 'New repair', ticket: 'Ticket', board: 'Board', list: 'List', customer: 'Customer',
+      title: 'Repairs', subtitle: 'Device tickets and workshop', newTicket: 'New repair', ticket: 'Ticket', board: 'Board', list: 'List', boardLimited: 'Showing the newest {{shown}} of {{total}} open devices. Use the list or search for older ones, and move devices nobody collected to “Not collected”.', customer: 'Customer',
       device: 'Device', brand: 'Brand', model: 'Model', imei: 'IMEI', serialNumber: 'Serial number', color: 'Color', condition: 'Device condition',
       conditionHint: 'Scratches, cracks, missing buttons…', passcode: 'Screen lock / passcode', showPasscode: 'Show passcode', complaint: 'Customer complaint',
       diagnosis: 'Technician diagnosis', notes: 'Internal notes', accessories: 'Received with the device', technician: 'Technician', unassigned: 'Unassigned',
@@ -62,7 +62,7 @@ export const business = {
       direction: { OUT: 'مدفوع للمورد', IN: 'مستلم من المورد' }, valueReceived: 'قيمة المستلم'
     },
     repairs: {
-      title: 'الصيانة', subtitle: 'تذاكر الأجهزة والورشة', newTicket: 'استلام جهاز', ticket: 'تذكرة', board: 'لوحة', list: 'قائمة', customer: 'العميل',
+      title: 'الصيانة', subtitle: 'تذاكر الأجهزة والورشة', newTicket: 'استلام جهاز', ticket: 'تذكرة', board: 'لوحة', list: 'قائمة', boardLimited: 'معروض أحدث {{shown}} من {{total}} جهاز مفتوح. استخدم «قائمة» أو البحث للأقدم، وانقل الأجهزة اللي أصحابها ما رجعوش لـ «لم يُستلم».', customer: 'العميل',
       device: 'الجهاز', brand: 'الماركة', model: 'الموديل', imei: 'IMEI', serialNumber: 'السيريال', color: 'اللون', condition: 'حالة الجهاز',
       conditionHint: 'خدوش، كسر، أزرار ناقصة…', passcode: 'رمز قفل الشاشة', showPasscode: 'إظهار الرمز', complaint: 'شكوى العميل',
       diagnosis: 'تشخيص الفني', notes: 'ملاحظات داخلية', accessories: 'مستلم مع الجهاز', technician: 'الفني', unassigned: 'غير محدد',

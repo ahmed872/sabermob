@@ -67,7 +67,8 @@ function RepairDetail({ r, statuses }: { r: RepairDto; statuses: RepairStatusDto
       expectedAt: form.expectedAt ? new Date(form.expectedAt).toISOString() : null
     })
 
-  const moveTargets = statuses.filter((s) => s.isActive && !s.isFinal && s.id !== r.statusId)
+  // "Not collected" is final (off the board) but can still be reopened or delivered.
+  const moveTargets = statuses.filter((s) => s.isActive && (!s.isFinal || s.key === 'UNCLAIMED') && s.id !== r.statusId)
 
   return (
     <div className="flex h-full flex-col">

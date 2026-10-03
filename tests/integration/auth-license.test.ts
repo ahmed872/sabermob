@@ -15,7 +15,7 @@ describe('onboarding & authentication', () => {
     t = await createTestApp()
     expect(await t.app.bootstrap.needsOnboarding()).toBe(true)
     expect(await t.app.db.role.count()).toBe(6)
-    expect(await t.app.db.repairStatus.count()).toBe(9)
+    expect(await t.app.db.repairStatus.count()).toBe(10)
     await setupOwner(t)
     expect(await t.app.bootstrap.needsOnboarding()).toBe(false)
     expect(actor(t).permissions.has('manage_users')).toBe(true)

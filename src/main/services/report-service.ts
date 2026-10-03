@@ -11,6 +11,7 @@ import type {
   SupplierReport
 } from '@shared/types/reports'
 import { normalizePhone } from '@shared/text'
+import { addDays, localDayKey, startOfDay } from '@shared/dates'
 import { rawQuery, type Db } from '../database/client'
 import type { Actor } from './auth-service'
 import type { CatalogService } from './catalog-service'
@@ -50,8 +51,8 @@ export class ReportService {
   async dashboard(actor: Actor): Promise<DashboardData> {
     const can = (p: string) => actor.permissions.has(p as never)
     const now = this.now()
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const startYesterday = new Date(startToday.getTime() - DAY)
+    const startToday = startOfDay(now)
+    const startYesterday = addDays(now, -1)
     const sales = async (from: Date, to: Date) => {
       const [r] = await rawQuery<{ n: number; total: number; profit: number }>(
         this.db,
@@ -63,7 +64,7 @@ export class ReportService {
       )
       return r ?? { n: 0, total: 0, profit: 0 }
     }
-    const today = await sales(startToday, new Date(startToday.getTime() + DAY))
+    const today = await sales(startToday, addDays(now, 1))
     const yesterday = await sales(startYesterday, startToday)
     const alerts = await rawQuery<{ low: number; out: number; dead: number }>(
       this.db,
@@ -90,7 +91,7 @@ export class ReportService {
       this.db,
       `SELECT COALESCE(SUM(b), 0) AS debt FROM (SELECT SUM(amount) AS b FROM CustomerLedger GROUP BY customerId HAVING b > 0)`
     )
-    const trendFrom = new Date(startToday.getTime() - 13 * DAY)
+    const trendFrom = addDays(now, -13)
     const trendRows = await rawQuery<{ day: string; sales: number; profit: number }>(
       this.db,
       `SELECT date(s.createdAt, 'localtime') AS day, COALESCE(SUM(${this.#itemNet}), 0) AS sales,
@@ -100,8 +101,7 @@ export class ReportService {
     )
     const trend: DashboardData['trend'] = []
     for (let i = 0; i < 14; i++) {
-      const d = new Date(trendFrom.getTime() + i * DAY)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const key = localDayKey(addDays(trendFrom, i))
       const row = trendRows.find((r) => r.day === key)
       trend.push({ day: key, sales: row?.sales ?? 0, profit: can('view_profit') ? (row?.profit ?? 0) : null })
     }

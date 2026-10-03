@@ -1,4 +1,5 @@
 import { formatMoney, type Minor } from '@shared/money'
+import { addDays, startOfDay } from '@shared/dates'
 import i18n from '../i18n'
 import { useApp } from '../stores/app'
 
@@ -57,8 +58,8 @@ export function fmtPercentBp(bp: number): string {
 
 /** Start/end of the local day as ISO strings. */
 export function dayRange(date = new Date()): { from: string; to: string } {
-  const from = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  const to = new Date(from.getTime() + 86_400_000)
+  const from = startOfDay(date)
+  const to = addDays(date, 1)
   return { from: from.toISOString(), to: to.toISOString() }
 }
 

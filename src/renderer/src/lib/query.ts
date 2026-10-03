@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import type { ApiInput, ApiMethod, ApiOutput } from '@shared/ipc/contract'
 import i18n from '../i18n'
 import { ApiError, call, callWithOverride } from './api'
+import { fmtMoney } from './format'
 
 // Every call goes over local IPC, never the network: 'always' keeps queries and
 // mutations running when the PC has no internet (the default 'online' mode pauses them).
@@ -18,6 +19,7 @@ export function errorMessage(err: unknown): string {
     const key = `errors.${err.code}`
     const params = { ...(err.details ?? {}) } as Record<string, unknown>
     if (typeof params.permission === 'string') params.permission = i18n.t(`permissions.${params.permission}`)
+    if (err.code === 'INSUFFICIENT_CASH' && typeof params.available === 'number') params.available = fmtMoney(params.available)
     return i18n.exists(key) ? i18n.t(key, params) : i18n.t('errors.INTERNAL')
   }
   return i18n.t('errors.INTERNAL')

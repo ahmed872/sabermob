@@ -39,7 +39,7 @@ export class ShiftService {
       if (!shift) throw new AppError('SHIFT_REQUIRED')
       if (input.type === 'PAY_OUT') {
         const s = await this.#computeExpected(tx, shift.id, shift.openingCash)
-        if (input.amount > s.expectedCash) throw new AppError('VALIDATION', 'Not enough cash in the drawer', { available: s.expectedCash })
+        if (input.amount > s.expectedCash) throw new AppError('INSUFFICIENT_CASH', 'Not enough cash in the drawer', { available: s.expectedCash })
       }
       const m = await tx.cashMovement.create({ data: { shiftId: shift.id, type: input.type, amount: input.amount, reason: input.reason, userId: actor.userId } })
       await this.audit.log({ userId: actor.userId, action: 'shift.cash_movement', entity: 'CashMovement', entityId: m.id, metadata: input }, tx)

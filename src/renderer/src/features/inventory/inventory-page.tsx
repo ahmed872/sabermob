@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowDownUp, Boxes, FileSpreadsheet, Package, PackagePlus, Star, Tags } from 'lucide-react'
 import type { ProductQueryInput } from '@shared/schemas/catalog'
@@ -93,7 +93,10 @@ function ProductsTab() {
   const navigate = useNavigate()
   const can = useCan()
   const [q, setQ] = useState('')
-  const [query, setQuery] = useState<ProductQueryInput>({ page: 1, pageSize: 50, stock: 'all', sort: 'name' })
+  // Dashboard alerts link here with ?stock=low|out|dead
+  const [params] = useSearchParams()
+  const initialStock = params.get('stock')
+  const [query, setQuery] = useState<ProductQueryInput>({ page: 1, pageSize: 50, stock: initialStock === 'low' || initialStock === 'out' || initialStock === 'dead' ? initialStock : 'all', sort: 'name' })
   const [adjustItem, setAdjustItem] = useState<VariantListItem | null>(null)
   const categories = useApi('catalog.categories')
   const brands = useApi('catalog.brands')

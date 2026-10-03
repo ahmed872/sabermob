@@ -256,7 +256,7 @@ describe('shifts', () => {
     const a = await product('Case', 15000)
     await t.app.sales.complete(sale([{ variantId: a, qty: 1, unitPrice: 15000 }], [{ method: 'CASH', amount: 15000 }]), actor(t))
     await t.app.shifts.cashMovement({ type: 'PAY_OUT', amount: 5000, reason: 'tea' }, actor(t))
-    await expect(t.app.shifts.cashMovement({ type: 'PAY_OUT', amount: 999999, reason: 'too much' }, actor(t))).rejects.toMatchObject({ code: 'VALIDATION' })
+    await expect(t.app.shifts.cashMovement({ type: 'PAY_OUT', amount: 999999, reason: 'too much' }, actor(t))).rejects.toMatchObject({ code: 'INSUFFICIENT_CASH' })
     const closed = await t.app.shifts.close(29000, null, actor(t))
     expect(closed.expectedCash).toBe(30000)
     expect(closed.difference).toBe(-1000)

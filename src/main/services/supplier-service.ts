@@ -142,7 +142,7 @@ export class SupplierService {
       const direction = input.direction ?? 'OUT'
       if (input.method === 'CASH' && direction === 'OUT' && shift) {
         const summary = await this.shifts.summary(shift.id, tx)
-        if (input.amount > summary.expectedCash) throw new AppError('VALIDATION', 'Not enough cash in the drawer', { available: summary.expectedCash })
+        if (input.amount > summary.expectedCash) throw new AppError('INSUFFICIENT_CASH', 'Not enough cash in the drawer', { available: summary.expectedCash })
       }
       const p = await tx.supplierPayment.create({
         data: {
@@ -253,6 +253,11 @@ export class SupplierService {
       }
       if (input.payment && input.payment.amount > 0) {
         const shift = await this.shifts.currentShift(tx)
+        // Same rule as pay(): cash handed over during a shift comes out of the drawer.
+        if (input.payment.method === 'CASH' && shift) {
+          const summary = await this.shifts.summary(shift.id, tx)
+          if (input.payment.amount > summary.expectedCash) throw new AppError('INSUFFICIENT_CASH', 'Not enough cash in the drawer', { available: summary.expectedCash })
+        }
         const p = await tx.supplierPayment.create({
           data: {
             supplierId: supplier.id,

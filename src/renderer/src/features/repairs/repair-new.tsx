@@ -15,6 +15,7 @@ import { Field, Input, MoneyInput, Select, Textarea } from '../../components/ui/
 import { Card, CardHeader, Checkbox } from '../../components/ui/misc'
 import { PhotoCapture } from '../../components/photo-capture'
 import { SignaturePad } from '../../components/signature-pad'
+import { addDays, localDayKey } from '@shared/dates'
 
 export default function RepairNewPage() {
   const { t } = useTranslation()
@@ -39,7 +40,7 @@ export default function RepairNewPage() {
     estimatedPrice: 0,
     deposit: 0,
     depositMethod: 'CASH' as PaymentMethod,
-    expectedAt: new Date(Date.now() + settings.repairs.defaultExpectedDays * 86_400_000).toISOString().slice(0, 10),
+    expectedAt: localDayKey(addDays(new Date(), settings.repairs.defaultExpectedDays)),
     accessories: [] as string[],
     parentRepairId: null as string | null
   })

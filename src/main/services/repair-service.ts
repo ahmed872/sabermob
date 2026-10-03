@@ -267,7 +267,7 @@ export class RepairService {
         if (!r || r.deletedAt) throw new AppError('NOT_FOUND')
         const to = await tx.repairStatus.findUnique({ where: { id: input.statusId } })
         if (!to || !to.isActive) throw new AppError('NOT_FOUND', 'Status not found')
-        if (r.status.isFinal) throw new AppError('INVALID_STATE', 'Repair is already closed')
+        if (r.status.isFinal && r.status.key !== 'UNCLAIMED') throw new AppError('INVALID_STATE', 'Repair is already closed')
         const data: Record<string, unknown> = { statusId: to.id }
         const shift = await this.shifts.currentShift(tx)
 

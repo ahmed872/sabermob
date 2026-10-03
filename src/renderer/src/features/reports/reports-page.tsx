@@ -16,18 +16,18 @@ import { PageLoader } from '../../components/ui/spinner'
 import { DataTable, type Column } from '../../components/ui/table'
 import { BarLineChart, ShareBars } from '../../components/charts'
 import { statusLabel } from '../repairs/repairs-page'
+import { addDays, startOfDay } from '@shared/dates'
 
 type RangeKey = 'today' | 'week' | 'month' | 'lastMonth' | 'year' | 'custom'
 
 function rangeOf(k: RangeKey, custom: { from: string; to: string }): { from: string; to: string } {
   const now = new Date()
-  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const tomorrow = new Date(day(now).getTime() + 86_400_000)
+  const tomorrow = addDays(now, 1)
   switch (k) {
     case 'today':
-      return { from: day(now).toISOString(), to: tomorrow.toISOString() }
+      return { from: startOfDay(now).toISOString(), to: tomorrow.toISOString() }
     case 'week':
-      return { from: new Date(day(now).getTime() - 6 * 86_400_000).toISOString(), to: tomorrow.toISOString() }
+      return { from: addDays(now, -6).toISOString(), to: tomorrow.toISOString() }
     case 'month':
       return { from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(), to: tomorrow.toISOString() }
     case 'lastMonth':
@@ -35,7 +35,7 @@ function rangeOf(k: RangeKey, custom: { from: string; to: string }): { from: str
     case 'year':
       return { from: new Date(now.getFullYear(), 0, 1).toISOString(), to: tomorrow.toISOString() }
     default:
-      return { from: new Date(`${custom.from}T00:00:00`).toISOString(), to: new Date(new Date(`${custom.to}T00:00:00`).getTime() + 86_400_000).toISOString() }
+      return { from: new Date(`${custom.from}T00:00:00`).toISOString(), to: addDays(new Date(`${custom.to}T00:00:00`), 1).toISOString() }
   }
 }
 
