@@ -6,6 +6,7 @@ import { empty, id } from '@shared/schemas/common'
 import type { AppContext } from '../../app/context'
 import type { ApiRouter } from '../router'
 import type { Actor } from '../../services/auth-service'
+import type { Updater } from '../../platform/updater'
 
 const password = z.string().min(6).max(128)
 
@@ -30,7 +31,7 @@ function requireImportPermission(actor: Actor, e: z.infer<typeof entity>): void 
   if (!actor.permissions.has(perm)) throw new AppError('FORBIDDEN', 'Permission denied', { permission: perm })
 }
 
-export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindow | null): void {
+export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindow | null, updater: Updater | null): void {
   const opts = { permission: 'manage_backups' as const, allowUnlicensed: true }
 
   r.handle('backup.status', { input: empty, ...opts }, (_i, { app }) => app.backup.status())
@@ -109,6 +110,16 @@ export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindo
   r.handle('import.commit', { input: z.object({ token: z.string().uuid(), entity, mapping, mode: z.enum(['skip', 'update']) }), ...importPerm, skipGate: true }, (i, { app, actor }) => {
     requireImportPermission(actor!, i.entity)
     return app.imports.commit(i.token, i.entity, i.mapping, i.mode, actor!)
+  })
+
+  const upd = { input: empty, permission: 'manage_settings' as const, allowUnlicensed: true, skipGate: true }
+  const off = { enabled: false, state: 'idle' as const, currentVersion: electronApp.getVersion(), version: null, progress: 0, error: null }
+  r.handle('system.updateStatus', upd, () => updater?.status() ?? off)
+  r.handle('system.checkUpdate', upd, async () => (updater ? updater.check() : off))
+  r.handle('system.downloadUpdate', upd, async () => (updater ? updater.download() : off))
+  r.handle('system.installUpdate', upd, async (_i, { actor }) => {
+    await updater?.install(actor!.userId)
+    return { ok: true as const }
   })
 
   r.handle('backup.openFolder', { input: empty, ...opts, skipGate: true }, async (_i, { app }) => {

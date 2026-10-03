@@ -1,4 +1,4 @@
-export type BackupKind = 'AUTO' | 'MANUAL' | 'PRE_RESTORE' | 'BUNDLE'
+export type BackupKind = 'AUTO' | 'MANUAL' | 'PRE_RESTORE' | 'PRE_UPDATE' | 'BUNDLE'
 
 export interface BackupRecordDto {
   id: string

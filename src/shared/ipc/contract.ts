@@ -3,6 +3,7 @@
  * handler registered in src/main/ipc/handlers/*. Inputs are validated with
  * the zod schemas in src/shared/schemas; outputs are plain DTOs.
  */
+import type { UpdateStatus } from '../types/update'
 import type { AllSettings, SettingsGroup } from '../settings'
 import type { LicenseState } from '../types/license'
 import type { AuditLogDto, LoginUserTile, RoleDto, SessionInfo, UserDto } from '../types/auth'
@@ -50,6 +51,11 @@ export interface CoreContract {
   'system.onboard': { in: OnboardingInput; out: { ok: true } }
   'system.openDataFolder': { in: Empty; out: { ok: true } }
   'system.printers': { in: Empty; out: Array<{ name: string; displayName: string; isDefault: boolean }> }
+  'system.updateStatus': { in: Empty; out: UpdateStatus }
+  'system.checkUpdate': { in: Empty; out: UpdateStatus }
+  'system.downloadUpdate': { in: Empty; out: UpdateStatus }
+  /** Backs up, then closes the app and installs the downloaded update. */
+  'system.installUpdate': { in: Empty; out: { ok: true } }
   // license
   'license.state': { in: Empty; out: LicenseState }
   'license.activate': { in: ActivateInput; out: LicenseState }
@@ -114,5 +120,6 @@ export interface ApiEvents {
   'settings:changed': { group: SettingsGroup }
   'notice': { level: 'info' | 'warning' | 'error'; key: string; params?: Record<string, unknown> }
   'menu:command': { command: string }
+  'update:status': UpdateStatus
 }
 export type ApiEventName = keyof ApiEvents

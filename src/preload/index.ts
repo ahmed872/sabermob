@@ -5,7 +5,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
  * request function and an event subscription — no Node APIs, no direct
  * ipcRenderer access. Every request is validated again in the main process.
  */
-const EVENTS = new Set(['session:changed', 'license:changed', 'settings:changed', 'notice', 'menu:command'])
+const EVENTS = new Set(['session:changed', 'license:changed', 'settings:changed', 'notice', 'menu:command', 'update:status'])
 
 const api = {
   invoke(method: string, input?: unknown): Promise<unknown> {

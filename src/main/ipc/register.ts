@@ -9,6 +9,7 @@ import { registerPrintingHandlers } from './handlers/printing'
 import { registerReportHandlers } from './handlers/reports'
 import { registerDataHandlers } from './handlers/data'
 import { Printer } from '../printing/printer'
+import type { Updater } from '../platform/updater'
 
 export interface HandlerDeps {
   appVersion: string
@@ -19,6 +20,7 @@ export interface HandlerDeps {
   rendererUrl: string
   preloadPath: string
   emit: <E extends ApiEventName>(event: E, payload: ApiEvents[E]) => void
+  updater: Updater | null
 }
 
 export function registerAllHandlers(router: ApiRouter, ctx: AppContext, deps: HandlerDeps): void {
@@ -35,5 +37,5 @@ export function registerAllHandlers(router: ApiRouter, ctx: AppContext, deps: Ha
   const printer = new Printer(deps.rendererUrl, deps.preloadPath, ctx.log)
   registerPrintingHandlers(router, printer, deps.getWindow)
   registerReportHandlers(router, printer, deps.getWindow)
-  registerDataHandlers(router, deps.getWindow)
+  registerDataHandlers(router, deps.getWindow, deps.updater)
 }

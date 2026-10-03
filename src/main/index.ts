@@ -8,6 +8,7 @@ import { ApiRouter } from './ipc/router'
 import { registerAllHandlers } from './ipc/register'
 import { OsLicensePlatform } from './platform/license-platform'
 import { osKeyProtector } from './platform/key-protector'
+import { Updater } from './platform/updater'
 import { APP_SCHEME, handleAppProtocol, registerSchemePrivileges } from './platform/protocol'
 import { startBackgroundJobs, stopBackgroundJobs } from './app/background'
 
@@ -55,7 +56,7 @@ function isTrustedSender(url: string): boolean {
   return false
 }
 
-function hardenSession(): void {
+function hardenSession(updater: Updater): void {
   const ses = session.defaultSession
   // Only the camera (QR scanning) may be requested; everything else is denied.
   ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
@@ -67,6 +68,8 @@ function hardenSession(): void {
   ses.webRequest.onBeforeRequest((details, callback) => {
     const u = details.url
     const local = u.startsWith(`${APP_SCHEME}:`) || u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('devtools:')
+    // The main process may reach the configured update server, nothing else.
+    if (!details.webContentsId && updater.allows(u)) return callback({ cancel: false })
     const dev = isDev && (u.startsWith('http://localhost') || u.startsWith('ws://localhost') || u.startsWith('http://127.0.0.1') || u.startsWith('ws://127.0.0.1'))
     callback({ cancel: !(local || dev) })
   })
@@ -130,6 +133,8 @@ async function bootstrap(): Promise<void> {
     return
   }
 
+  const c = ctx
+  const updater = new Updater(c, (status) => emit('update:status', status))
   router = new ApiRouter(ctx)
   registerAllHandlers(router, ctx, {
     appVersion: app.getVersion(),
@@ -141,7 +146,8 @@ async function bootstrap(): Promise<void> {
     rendererDir: RENDERER_DIR,
     rendererUrl: isDev ? process.env.ELECTRON_RENDERER_URL! : `${APP_SCHEME}://bundle`,
     preloadPath: join(__dirname, '../preload/index.js'),
-    emit
+    emit,
+    updater
   })
 
   ipcMain.handle('api:invoke', async (event, method: unknown, input: unknown) => {
@@ -158,7 +164,7 @@ async function bootstrap(): Promise<void> {
   ctx.settings.onChange((group) => emit('settings:changed', { group }))
 
   handleAppProtocol(RENDERER_DIR, () => ctx!.paths.media)
-  hardenSession()
+  hardenSession(updater)
   Menu.setApplicationMenu(null)
   mainWindow = createWindow()
   startBackgroundJobs(ctx, emit)

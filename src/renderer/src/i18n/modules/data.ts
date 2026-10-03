@@ -1,5 +1,12 @@
 export const data = {
   en: {
+    update: {
+      title: 'Updates', current: 'Installed version {{version}}', check: 'Check for updates', checking: 'Checking…', none: 'You have the latest version',
+      available: 'Version {{version}} is available', download: 'Download', downloading: 'Downloading… {{progress}}%', ready: 'Version {{version}} is ready to install',
+      install: 'Back up & install now', installHint: 'A backup is made first. The app closes, updates and opens again. Your data is kept.',
+      offline: 'Could not reach the update server. Check the internet connection and try again.',
+      manual: 'Updates come as a new installer from your vendor. Run it on this computer: your data, settings and license are kept.'
+    },
     backup: {
       last: 'Last backup', never: 'No backup yet', next: 'Next automatic backup', now: 'Back up now', creating: 'Backing up…', created: 'Backup saved and encrypted',
       restoreFile: 'Restore from a file…', openFolder: 'Open backup folder', protectedOs: 'Encrypted · key protected by this Windows account', protectedPlain: 'Encrypted with your backup password',
@@ -10,7 +17,7 @@ export const data = {
       folders: 'Where backups are saved', folder: 'Backup folder', mirror: 'Extra copy (USB / external drive)', mirrorHint: 'Each backup is also copied here. Recommended: a USB stick or another disk.', none: 'Not set',
       change: 'Change', choose: 'Choose', reset: 'Use default', remove: 'Remove',
       history: 'Backups', verify: 'Check', verified: 'Backup is healthy: {{products}} products, {{sales}} sales', restore: 'Restore', missing: 'File missing', failed: 'Failed',
-      kinds: { AUTO: 'Automatic', MANUAL: 'Manual', PRE_RESTORE: 'Before restore', BUNDLE: 'Transfer bundle' },
+      kinds: { AUTO: 'Automatic', MANUAL: 'Manual', PRE_RESTORE: 'Before restore', PRE_UPDATE: 'Before update', BUNDLE: 'Transfer bundle' },
       move: 'Move to another computer', moveBody: 'Save the whole shop (data, photos and settings) in one encrypted file. On the new computer choose “Restore from backup” on the first screen.',
       exportBundle: 'Save transfer file', bundleSaved: 'Transfer file saved: {{path}}',
       restoreTitle: 'Restore backup', restoreWarn: 'All current data on this computer will be replaced by this backup.', restoreSafety: 'A safety copy of the current data is saved first, so this can be undone.',
@@ -36,6 +43,13 @@ export const data = {
     }
   },
   ar: {
+    update: {
+      title: 'التحديثات', current: 'الإصدار الحالي {{version}}', check: 'البحث عن تحديث', checking: 'جاري البحث…', none: 'عندك أحدث إصدار',
+      available: 'الإصدار {{version}} متاح', download: 'تحميل', downloading: 'جاري التحميل… {{progress}}%', ready: 'الإصدار {{version}} جاهز للتثبيت',
+      install: 'نسخة احتياطية ثم تثبيت', installHint: 'هيتعمل نسخة احتياطية الأول. البرنامج هيقفل ويتحدث ويفتح تاني. بياناتك محفوظة.',
+      offline: 'تعذر الوصول لسيرفر التحديثات. تأكد من الإنترنت وحاول تاني.',
+      manual: 'التحديثات بتوصلك كملف تثبيت جديد من المورد. شغله على الجهاز ده: بياناتك وإعداداتك والترخيص بيفضلوا زي ما هم.'
+    },
     backup: {
       last: 'آخر نسخة احتياطية', never: 'لا توجد نسخة احتياطية بعد', next: 'النسخة التلقائية القادمة', now: 'نسخة احتياطية الآن', creating: 'جاري النسخ…', created: 'تم حفظ النسخة الاحتياطية مشفرة',
       restoreFile: 'استرجاع من ملف…', openFolder: 'فتح مجلد النسخ', protectedOs: 'مشفرة · المفتاح محمي بحساب ويندوز ده', protectedPlain: 'مشفرة بكلمة مرور النسخ الاحتياطي',
@@ -46,7 +60,7 @@ export const data = {
       folders: 'مكان حفظ النسخ', folder: 'مجلد النسخ الاحتياطي', mirror: 'نسخة إضافية (فلاشة / هارد خارجي)', mirrorHint: 'كل نسخة بتتنسخ هنا كمان. يفضل فلاشة أو هارد تاني.', none: 'غير محدد',
       change: 'تغيير', choose: 'اختيار', reset: 'الافتراضي', remove: 'إزالة',
       history: 'النسخ الاحتياطية', verify: 'فحص', verified: 'النسخة سليمة: {{products}} صنف، {{sales}} عملية بيع', restore: 'استرجاع', missing: 'الملف مش موجود', failed: 'فشلت',
-      kinds: { AUTO: 'تلقائية', MANUAL: 'يدوية', PRE_RESTORE: 'قبل الاسترجاع', BUNDLE: 'ملف نقل' },
+      kinds: { AUTO: 'تلقائية', MANUAL: 'يدوية', PRE_RESTORE: 'قبل الاسترجاع', PRE_UPDATE: 'قبل التحديث', BUNDLE: 'ملف نقل' },
       move: 'النقل لجهاز تاني', moveBody: 'احفظ المحل كله (البيانات والصور والإعدادات) في ملف واحد مشفر. على الجهاز الجديد اختار «استرجاع من نسخة احتياطية» في أول شاشة.',
       exportBundle: 'حفظ ملف النقل', bundleSaved: 'تم حفظ ملف النقل: {{path}}',
       restoreTitle: 'استرجاع نسخة احتياطية', restoreWarn: 'كل البيانات الحالية على الجهاز ده هتتبدل بالنسخة دي.', restoreSafety: 'هيتعمل نسخة أمان من البيانات الحالية الأول، فتقدر ترجع فيها.',
