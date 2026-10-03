@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -167,4 +167,32 @@ describe('encrypted backups', () => {
     await t.app.backup.unlock('new-password-2', null)
     expect((await t.app.backup.status()).unlocked).toBe(true)
   })
+
+  it('rolls back a restore interrupted mid-swap (power cut) on the next start', async () => {
+    await t.app.auth.login({ username: 'owner', secret: 'owner-pass-1', method: 'PASSWORD' })
+    await product('Survives Power Cut')
+    const dir = t.dir
+    const paths = t.app.paths
+    await t.close()
+    // simulate: old database moved aside, new one not yet in place, journal written
+    const old = join(paths.temp, 'replaced-simulated')
+    mkdirSync(old, { recursive: true })
+    renameSync(paths.database, join(old, 'central.db'))
+    writeFileSync(join(dir, 'restore-journal.json'), JSON.stringify({ old }))
+    t = await createTestApp({ dir, clock: t.clock, platform: t.platform })
+    expect(await t.app.bootstrap.needsOnboarding()).toBe(false)
+    await t.app.auth.login({ username: 'owner', secret: 'owner-pass-1', method: 'PASSWORD' })
+    expect((await t.app.catalog.listVariants({ q: 'Survives Power Cut', page: 1, pageSize: 5 }, true)).total).toBe(1)
+    expect(existsSync(join(dir, 'restore-journal.json'))).toBe(false)
+  })
+
+  it('rejects a truncated (incomplete) backup file', async () => {
+    const rec = await t.app.backup.create('MANUAL', null)
+    const bytes = readFileSync(fileOf(rec.fileName))
+    const cut = join(t.dir, 'truncated.cpbak')
+    writeFileSync(cut, bytes.subarray(0, Math.floor(bytes.length / 2)))
+    const info = t.app.backup.inspectFile(cut)
+    await expect(t.app.backup.restore(info.token, 'new-password-2', null)).rejects.toMatchObject({ code: 'BACKUP_INVALID' })
+  })
 })
+

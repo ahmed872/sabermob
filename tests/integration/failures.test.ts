@@ -74,6 +74,27 @@ describe('API boundary', () => {
   })
 })
 
+describe('disk full', () => {
+  it('reports DISK_FULL, saves nothing, and recovers when space is back', async () => {
+    const page_count = (await rawQuery<{ page_count: number }>(t.app.db, 'PRAGMA page_count'))[0]!.page_count
+    await rawQuery(t.app.db, `PRAGMA max_page_count = ${page_count}`)
+    const before = await t.app.db.product.count()
+    try {
+      const big = 'x'.repeat(150)
+      let code: string | undefined
+      for (let i = 0; i < 200 && !code; i++) {
+        const res = await call('catalog.saveProduct', { type: 'ACCESSORY', name: `Full ${i} ${big}`, notes: big.repeat(6), variants: [{ sellPrice: 100 }] })
+        code = res.error?.code
+      }
+      expect(code).toBe('DISK_FULL')
+    } finally {
+      await rawQuery(t.app.db, 'PRAGMA max_page_count = 1073741823')
+    }
+    expect(await t.app.db.product.count()).toBeGreaterThanOrEqual(before)
+    expect((await call('catalog.saveProduct', { type: 'ACCESSORY', name: 'After disk full', variants: [{ sellPrice: 100 }] })).ok).toBe(true)
+  })
+})
+
 describe('crash safety', () => {
   it('a sale retried after a restart is never recorded twice', async () => {
     await t.app.shifts.open(0, actor(t))

@@ -26,7 +26,7 @@ import { QrService } from '../services/qr-service'
 import { OfferService } from '../services/offer-service'
 import { ReportService } from '../services/report-service'
 import { ImportService } from '../services/import-service'
-import { BackupService, plainKeyProtector, type KeyProtector } from '../backup/backup-service'
+import { BackupService, plainKeyProtector, recoverInterruptedRestore, type KeyProtector } from '../backup/backup-service'
 
 export interface AppContextOptions {
   rootDir: string
@@ -89,6 +89,7 @@ export class AppContext {
     this.paths = createPaths(o.rootDir)
     this.log = o.logToFiles === false ? createSilentLoggers() : createLoggers(this.paths.logs)
     this.deviceId = this.#loadDeviceId()
+    recoverInterruptedRestore(this.paths, this.log)
     const migrations = loadMigrations(o.migrationsDir)
     this.migration = migrateDatabase(this.paths.database, migrations, {
       backupDir: this.paths.backups,

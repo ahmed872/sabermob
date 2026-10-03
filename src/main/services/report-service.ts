@@ -175,7 +175,15 @@ export class ReportService {
     )
     const byMethod = await rawQuery<{ method: string; amount: number }>(
       this.db,
-      `SELECT method, SUM(amount) AS amount FROM Payment WHERE createdAt >= ? AND createdAt < ? AND kind IN ('SALE', 'REFUND', 'DEBT_COLLECTION', 'REPAIR') GROUP BY method ORDER BY amount DESC`,
+      // How the period's sales were settled: adds up to net sales (repairs and debt
+      // collections are cash-drawer receipts, not sales, and appear in shift reports).
+      `SELECT method, SUM(amount) AS amount FROM (
+         SELECT p.method AS method, p.amount AS amount FROM Payment p JOIN Sale s ON s.id = p.saleId
+         WHERE s.createdAt >= ? AND s.createdAt < ? AND s.status <> 'VOIDED' AND p.kind IN ('SALE', 'REFUND')
+         UNION ALL
+         SELECT 'ON_CREDIT', creditAmount FROM Sale WHERE createdAt >= ? AND createdAt < ? AND status <> 'VOIDED' AND creditAmount > 0
+       ) GROUP BY method HAVING SUM(amount) <> 0 ORDER BY amount DESC`,
+      ...p,
       ...p
     )
     const byCategory = await rawQuery<{ name: string; qty: number; revenue: number; profit: number }>(

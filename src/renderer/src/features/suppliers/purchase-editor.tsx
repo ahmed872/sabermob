@@ -82,7 +82,7 @@ export default function PurchaseEditorPage() {
           <div className="space-y-4">
             <Card>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t('suppliers.title')}>
+                <Field label={t('suppliers.supplier')}>
                   <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
                     <option value="">{t('common.select')}</option>
                     {suppliers.data?.items.map((s) => (

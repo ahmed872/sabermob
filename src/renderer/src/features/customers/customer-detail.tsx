@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, HandCoins, Pencil, Phone, Trash2, Wrench, Receipt, ScrollText, Scale } from 'lucide-react'
+import { ArrowLeft, Award, HandCoins, Pencil, Phone, Trash2, Receipt, ScrollText, Scale } from 'lucide-react'
 import type { LedgerEntryDto } from '@shared/types/customers'
 import type { SaleListItem } from '@shared/types/sales'
 import type { RepairListItem } from '@shared/types/repairs'
@@ -108,7 +108,7 @@ export default function CustomerDetailPage() {
         <Stat label={t('customers.balance')} value={<BalanceText value={cust.balance} />} icon={HandCoins} tone={cust.balance > 0 ? 'danger' : 'success'} />
         <Stat label={t('customers.totalSpent')} value={fmtMoney(cust.totalSpent)} icon={Receipt} />
         <Stat label={t('customers.purchases')} value={fmtNumber(cust.salesCount)} icon={ScrollText} tone="info" hint={cust.lastPurchaseAt ? fmtDate(cust.lastPurchaseAt) : undefined} />
-        <Stat label={t('customers.points')} value={fmtNumber(cust.loyaltyPoints)} icon={Wrench} tone="warning" />
+        <Stat label={t('customers.points')} value={fmtNumber(cust.loyaltyPoints)} icon={Award} tone="warning" />
       </div>
       {cust.notes || cust.address ? (
         <Card className="mb-4 text-sm">

@@ -14,6 +14,8 @@ import { startBackgroundJobs, stopBackgroundJobs } from './app/background'
 
 const isDev = !app.isPackaged && !!process.env.ELECTRON_RENDERER_URL
 const DATA_DIR = process.env.CENTRAL_DATA_DIR || join(app.getPath('userData'))
+// Keep the browser profile (saved in-progress cart, UI state) with the data it belongs to.
+if (process.env.CENTRAL_DATA_DIR) app.setPath('userData', DATA_DIR)
 const RENDERER_DIR = join(__dirname, '../renderer')
 const MIGRATIONS_DIR = app.isPackaged ? join(process.resourcesPath, 'migrations') : join(app.getAppPath(), 'prisma/migrations')
 
@@ -23,6 +25,8 @@ let router: ApiRouter | null = null
 let quitting = false
 
 registerSchemePrivileges()
+// Native date inputs use day/month/year (Egypt), never the US month/day order.
+app.commandLine.appendSwitch('lang', 'en-GB')
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()

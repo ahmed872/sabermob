@@ -63,9 +63,11 @@ export default function CustomersPage() {
         actions={
           can('manage_customers') ? (
             <>
-              <Button variant="ghost" onClick={() => setImportOpen(true)}>
-                <FileSpreadsheet /> {t('importer.button')}
-              </Button>
+              {can('import_data') ? (
+                <Button variant="ghost" onClick={() => setImportOpen(true)}>
+                  <FileSpreadsheet /> {t('importer.button')}
+                </Button>
+              ) : null}
               <Button onClick={() => setCreating(true)}>
                 <UserPlus /> {t('customers.newCustomer')}
               </Button>

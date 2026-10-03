@@ -25,7 +25,8 @@
     "license:issue": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts issue",
     "license:verify": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts verify",
     "license:list": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts list",
-    "release:check": "node scripts/release-check.mjs"
+    "release:check": "node scripts/release-check.mjs",
+    "test:perf": "vitest run --config vitest.perf.config.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "7.10.0",

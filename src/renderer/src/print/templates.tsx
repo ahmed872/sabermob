@@ -154,13 +154,13 @@ function Receipt({ doc, formal }: { doc: Extract<PrintDocument, { type: 'receipt
       {formal ? <p className="text-center text-[1.15em] font-extrabold">{sale.taxTotal > 0 ? t('print.taxInvoice') : t('print.invoice')}</p> : null}
       <KV k={sale.invoiceNumber ? t('print.invoice') : t('print.receipt')} v={<span dir="ltr">{sale.invoiceNumber ?? sale.number}</span>} bold />
       <KV k={t('print.date')} v={f.date(sale.createdAt)} />
-      {store.showCashier ? <KV k={t('print.cashier')} v={sale.cashierName} /> : null}
-      {sale.customer ? <KV k={t('print.customer')} v={sale.customer.name} /> : null}
+      {store.showCashier ? <KV k={t('print.cashier')} v={<bdi>{sale.cashierName}</bdi>} /> : null}
+      {sale.customer ? <KV k={t('print.customer')} v={<bdi>{sale.customer.name}</bdi>} /> : null}
       {formal && sale.customer?.phone ? <KV k={t('print.phone')} v={<span dir="ltr">{sale.customer.phone}</span>} /> : null}
       <Dash />
       {sale.items.map((i) => (
         <div key={i.id} className="mb-1">
-          <p className="font-semibold">{i.name}</p>
+          <p className="font-semibold" dir="auto">{i.name}</p>
           <div className="flex justify-between">
             <span className="tabular" dir="ltr">
               {i.qty} × {f.money(i.unitPrice)}
@@ -209,14 +209,14 @@ function Invoice({ doc }: { doc: Extract<PrintDocument, { type: 'invoice' }> }) 
           <p>
             {t('print.date')}: {f.date(sale.createdAt)}
           </p>
-          {store.showCashier ? <p>{t('print.cashier')}: {sale.cashierName}</p> : null}
+          {store.showCashier ? <p>{t('print.cashier')}: <bdi>{sale.cashierName}</bdi></p> : null}
           {doc.qr ? <img src={doc.qr} alt="" className="ms-auto mt-2 w-24" /> : null}
         </div>
       </div>
       {sale.customer ? (
         <div className="mt-4 rounded border border-black/40 p-3">
           <p className="font-bold">{t('print.customer')}</p>
-          <p>{sale.customer.name}</p>
+          <p dir="auto">{sale.customer.name}</p>
           {sale.customer.phone ? <p dir="ltr" className="text-start">{sale.customer.phone}</p> : null}
         </div>
       ) : null}
@@ -237,7 +237,7 @@ function Invoice({ doc }: { doc: Extract<PrintDocument, { type: 'invoice' }> }) 
             <tr key={i.id} className="border-b border-black/30">
               <td className="p-2">{k + 1}</td>
               <td className="p-2">
-                {i.name}
+                <bdi>{i.name}</bdi>
                 {i.serial ? <span className="block text-[11px]" dir="ltr">IMEI {i.serial}</span> : null}
               </td>
               <td className="p-2 text-center tabular">{i.qty}</td>
@@ -276,7 +276,7 @@ function RepairTicket({ doc }: { doc: Extract<PrintDocument, { type: 'repairTick
       {doc.qr ? <img src={doc.qr} alt="" className="mx-auto w-28" /> : null}
       <Dash />
       <KV k={t('print.date')} v={f.date(r.receivedAt)} />
-      <KV k={t('print.customer')} v={r.customerName} />
+      <KV k={t('print.customer')} v={<bdi>{r.customerName}</bdi>} />
       <KV k={t('print.phone')} v={<span dir="ltr">{r.customerPhone}</span>} />
       <KV k={t('print.device')} v={[r.deviceBrand, r.deviceModel].filter(Boolean).join(' ')} />
       {r.imei ? <KV k={t('print.imei')} v={<span dir="ltr">{r.imei}</span>} /> : null}
@@ -365,7 +365,7 @@ function Labels({ doc }: { doc: Extract<PrintDocument, { type: 'labels' }> }) {
     <div className="bg-white text-black">
       {doc.labels.map((l, i) => (
         <div key={i} style={{ width: w, height: h, pageBreakAfter: 'always', breakAfter: 'page' }} className="flex flex-col items-center justify-center overflow-hidden px-1 text-center">
-          <p className="line-clamp-1 w-full text-[10px] font-bold leading-tight">{l.name}</p>
+          <p className="line-clamp-1 w-full text-[10px] font-bold leading-tight" dir="auto">{l.name}</p>
           <p className="text-[12px] font-black">{f.money(l.price)}</p>
           {l.barcode ? <Barcode value={l.barcode} height={Math.max(18, h * 0.38)} /> : l.qr ? <img src={l.qr} alt="" style={{ height: h * 0.5 }} /> : null}
         </div>

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { z } from 'zod'
-import { app as electronApp, dialog, shell, type BrowserWindow } from 'electron'
+import { app as electronApp, dialog, session, shell, type BrowserWindow } from 'electron'
 import { AppError } from '@shared/errors'
 import { empty, id } from '@shared/schemas/common'
 import type { AppContext } from '../../app/context'
@@ -26,9 +26,11 @@ async function requireRestoreAccess(app: AppContext): Promise<string | null> {
 const entity = z.enum(['products', 'customers'])
 const mapping = z.record(z.string().max(40), z.number().int().min(0).max(59).nullable())
 
+/** Bulk import needs import_data plus the right to create what is imported. */
 function requireImportPermission(actor: Actor, e: z.infer<typeof entity>): void {
-  const perm = e === 'products' ? 'manage_inventory' : 'manage_customers'
-  if (!actor.permissions.has(perm)) throw new AppError('FORBIDDEN', 'Permission denied', { permission: perm })
+  for (const perm of ['import_data', e === 'products' ? 'manage_inventory' : 'manage_customers'] as const) {
+    if (!actor.permissions.has(perm)) throw new AppError('FORBIDDEN', 'Permission denied', { permission: perm })
+  }
 }
 
 export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindow | null, updater: Updater | null): void {
@@ -62,13 +64,20 @@ export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindo
 
   r.handle('backup.restore', { input: z.object({ token: z.string().uuid(), password: z.string().min(1).max(128) }), public: true, allowUnlicensed: true, skipGate: true }, async (i, { app }) => {
     const userId = await requireRestoreAccess(app)
-    await app.backup.restore(i.token, i.password, userId)
-    // The database was swapped: start fresh so every service reloads it.
-    setTimeout(() => {
-      // E2E tests start the app again themselves.
-      if (!process.env.CENTRAL_E2E_PDF_DIR) electronApp.relaunch()
-      electronApp.exit(0)
-    }, 400)
+    try {
+      await app.backup.restore(i.token, i.password, userId)
+    } finally {
+      // Once the database was closed for the swap (done or rolled back), start fresh.
+      if (app.backup.restartRequired) {
+        // A saved in-progress cart may point at products of the replaced data.
+        await session?.defaultSession?.clearStorageData({ storages: ['localstorage'] }).catch(() => undefined)
+        setTimeout(() => {
+          // E2E tests start the app again themselves.
+          if (!process.env.CENTRAL_E2E_PDF_DIR) electronApp.relaunch()
+          electronApp.exit(0)
+        }, 400)
+      }
+    }
     return { ok: true as const }
   })
 
@@ -98,7 +107,7 @@ export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindo
     return { path }
   })
 
-  const importPerm = { permission: ['manage_inventory', 'manage_customers'] as ['manage_inventory', 'manage_customers'] }
+  const importPerm = { permission: 'import_data' as const }
   r.handle('import.parse', { input: z.object({ entity, fileName: z.string().max(260), data: z.string().max(20_000_000) }), ...importPerm, skipGate: true }, (i, { app, actor }) => {
     requireImportPermission(actor!, i.entity)
     return app.imports.parse(i.fileName, Buffer.from(i.data, 'base64'), i.entity)

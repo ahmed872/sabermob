@@ -26,6 +26,39 @@ export const plainKeyProtector: KeyProtector = {
 }
 
 const WRAP_SETTING = 'backup.wrap'
+const RESTORE_JOURNAL = 'restore-journal.json'
+
+/** Puts the data that was being replaced back in place. */
+function rollbackSwap(paths: AppPaths, old: string): void {
+  const oldDb = join(old, 'central.db')
+  if (existsSync(oldDb)) {
+    for (const suffix of ['', '-wal', '-shm', '-journal']) rmSync(paths.database + suffix, { force: true })
+    renameSync(oldDb, paths.database)
+  }
+  const oldMedia = join(old, 'media')
+  if (existsSync(oldMedia)) {
+    rmSync(paths.media, { recursive: true, force: true })
+    renameSync(oldMedia, paths.media)
+  }
+  rmSync(old, { recursive: true, force: true })
+}
+
+/**
+ * Runs at startup before the database is opened: a restore interrupted in
+ * the middle of swapping files (power loss) is rolled back to the old data.
+ */
+export function recoverInterruptedRestore(paths: AppPaths, log: Loggers): boolean {
+  const journal = join(paths.root, RESTORE_JOURNAL)
+  if (!existsSync(journal)) return false
+  try {
+    const { old } = JSON.parse(readFileSync(journal, 'utf8')) as { old: string }
+    if (old && existsSync(old)) rollbackSwap(paths, old)
+    log.app.warn('Interrupted restore rolled back; previous data kept', { old })
+  } finally {
+    rmSync(journal, { force: true })
+  }
+  return true
+}
 const COUNT_TABLES = { products: 'Product', customers: 'Customer', sales: 'Sale', repairs: 'Repair', suppliers: 'Supplier', users: 'User' } as const
 const EXT = { backup: '.cpbak', bundle: '.centralbundle' }
 
@@ -57,11 +90,17 @@ export class BackupService {
   #key: Buffer | null = null
   #picked = new Map<string, string>()
   #restoring = false
+  #restartRequired = false
 
   constructor(private readonly d: BackupDeps) {}
 
   get restoring(): boolean {
     return this.#restoring
+  }
+
+  /** The database was closed for a restore (successful or rolled back): the app must restart. */
+  get restartRequired(): boolean {
+    return this.#restartRequired
   }
 
   get #keystore(): string {
@@ -228,7 +267,7 @@ export class BackupService {
     } catch (err) {
       this.d.log.app.error('Backup failed', { kind, message: String(err) })
       await this.d.gate.run(() => this.d.db.backupRecord.create({ data: { kind, filePath: file, status: 'FAILED', error: String(err).slice(0, 500), createdBy: userId, createdAt: this.d.now() } }))
-      throw err instanceof AppError ? err : new AppError('FILE_ERROR', String(err))
+      throw err instanceof AppError ? err : new AppError(/ENOSPC/.test(String(err)) ? 'DISK_FULL' : 'FILE_ERROR', String(err))
     } finally {
       rmSync(snap, { force: true })
     }
@@ -348,17 +387,30 @@ export class BackupService {
       await this.d.gate.run(() => this.d.audit.log({ userId, action: 'backup.restore_started', metadata: { file: basename(file), kind: header.kind, createdAt: header.createdAt } }))
 
       await this.d.gate.freeze()
+      this.#restartRequired = true
       await this.d.db.$disconnect()
       const old = join(this.d.paths.temp, `replaced-${Date.now()}`)
       mkdirSync(old, { recursive: true })
+      // Journal first: if power is lost mid-swap, the next start puts the old data back.
+      const journal = join(this.d.paths.root, RESTORE_JOURNAL)
+      writeFileSync(journal, JSON.stringify({ old, startedAt: this.d.now().toISOString() }))
       const db = this.d.paths.database
-      for (const suffix of ['-wal', '-shm', '-journal']) rmSync(db + suffix, { force: true })
-      if (existsSync(db)) renameSync(db, join(old, 'central.db'))
-      renameSync(join(staged, 'db', 'central.db'), db)
-      if (existsSync(this.d.paths.media)) renameSync(this.d.paths.media, join(old, 'media'))
-      const stagedMedia = join(staged, 'media')
-      if (existsSync(stagedMedia)) renameSync(stagedMedia, this.d.paths.media)
-      else mkdirSync(this.d.paths.media, { recursive: true })
+      try {
+        for (const suffix of ['-wal', '-shm', '-journal']) rmSync(db + suffix, { force: true })
+        if (existsSync(db)) renameSync(db, join(old, 'central.db'))
+        renameSync(join(staged, 'db', 'central.db'), db)
+        if (existsSync(this.d.paths.media)) renameSync(this.d.paths.media, join(old, 'media'))
+        const stagedMedia = join(staged, 'media')
+        if (existsSync(stagedMedia)) renameSync(stagedMedia, this.d.paths.media)
+        else mkdirSync(this.d.paths.media, { recursive: true })
+      } catch (err) {
+        // e.g. a file locked by antivirus: undo, keep the current data
+        rollbackSwap(this.d.paths, old)
+        rmSync(journal, { force: true })
+        this.d.log.app.error('Restore swap failed; current data kept', { message: String(err) })
+        throw new AppError('FILE_ERROR', 'Restore could not replace the data files')
+      }
+      rmSync(journal, { force: true })
       this.#storeLocal(key)
       writeFileSync(join(this.d.paths.root, 'restore-marker.json'), JSON.stringify({ file: basename(file), kind: header.kind, createdAt: header.createdAt, restoredAt: this.d.now().toISOString(), userId, preRestore }))
       this.d.log.app.warn('Workspace restored from backup; restarting', { file: basename(file) })

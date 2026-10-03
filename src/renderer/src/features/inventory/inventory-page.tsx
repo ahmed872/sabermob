@@ -36,7 +36,7 @@ export default function InventoryPage() {
         subtitle={t('inventory.subtitle')}
         actions={
           <>
-            {can('manage_inventory') ? (
+            {can('manage_inventory') && can('import_data') ? (
               <Button variant="ghost" onClick={() => setImportOpen(true)}>
                 <FileSpreadsheet /> {t('importer.button')}
               </Button>

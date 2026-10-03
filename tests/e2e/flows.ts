@@ -24,8 +24,9 @@ export async function onboard(page: Page): Promise<void> {
 
 export async function loginWithPin(page: Page, pin = OWNER.pin): Promise<void> {
   await expect(page.getByText('أدخل الرقم السري')).toBeVisible()
-  await page.keyboard.type(pin)
-  await page.keyboard.press('Enter')
+  // tap the on-screen pad (keystrokes sent in the first milliseconds after a restart can be lost)
+  for (const d of pin) await page.getByRole('button', { name: d, exact: true }).click()
+  await page.getByRole('button', { name: 'submit' }).click()
   // Wait for the signed-in shell before deep-linking anywhere.
   await expect(page.getByRole('link', { name: 'الإعدادات' })).toBeVisible()
 }

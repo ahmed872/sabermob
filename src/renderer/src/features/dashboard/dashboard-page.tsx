@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const can = useCan()
   const session = useApp((s) => s.session)!
-  const q = useApi('reports.dashboard', undefined, { refetchInterval: 60_000, staleTime: 10_000 })
+  const q = useApi('reports.dashboard', undefined, { refetchInterval: 60_000, staleTime: 0, refetchOnMount: 'always' })
   const d = q.data
   if (!d) return <PageLoader />
   const alerts = buildAlerts(d, t)
@@ -129,7 +129,7 @@ export default function DashboardPage() {
             <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
               {d.technicians.map((tech) => (
                 <span key={tech.name} className="rounded-lg bg-sunken px-2.5 py-1 text-xs font-semibold">
-                  🔧 {tech.name}: {t('dashboard.openRepairs', { count: tech.open })}
+                  🔧 {tech.name === '—' ? t('repairs.unassigned') : tech.name}: {t('dashboard.openRepairs', { count: tech.open })}
                 </span>
               ))}
             </div>

@@ -10,7 +10,7 @@ export const business = {
       sort: { recent: 'Recent', name: 'Name', balance: 'Highest debt' }, saved: 'Customer saved', duplicatePhone: 'This phone belongs to {{name}}'
     },
     suppliers: {
-      title: 'Suppliers', subtitle: 'Purchases, payments and balances', newSupplier: 'New supplier', editSupplier: 'Edit supplier', company: 'Company',
+      title: 'Suppliers', supplier: 'Supplier', subtitle: 'Purchases, payments and balances', newSupplier: 'New supplier', editSupplier: 'Edit supplier', company: 'Company',
       weOwe: 'We owe', theyOwe: 'Owes us', settled: 'Settled', balance: 'Balance', totalPurchases: 'Total purchases', totalPaid: 'Total paid', openingBalance: 'Opening balance',
       openingHint: 'Positive = we owe them, negative = they owe us', pay: 'Pay supplier', receiveMoney: 'Receive money', paymentDone: 'Payment saved',
       purchases: 'Purchases', payments: 'Payments', ledger: 'Statement', newPurchase: 'New purchase', purchase: 'Purchase', invoiceNo: 'Supplier invoice #',
@@ -50,7 +50,7 @@ export const business = {
       sort: { recent: 'الأحدث', name: 'الاسم', balance: 'الأعلى مديونية' }, saved: 'تم حفظ العميل', duplicatePhone: 'هذا الرقم مسجل باسم {{name}}'
     },
     suppliers: {
-      title: 'الموردين', subtitle: 'المشتريات والمدفوعات والأرصدة', newSupplier: 'مورد جديد', editSupplier: 'تعديل مورد', company: 'الشركة',
+      title: 'الموردين', supplier: 'المورد', subtitle: 'المشتريات والمدفوعات والأرصدة', newSupplier: 'مورد جديد', editSupplier: 'تعديل مورد', company: 'الشركة',
       weOwe: 'علينا له', theyOwe: 'لنا عنده', settled: 'خالص', balance: 'الرصيد', totalPurchases: 'إجمالي المشتريات', totalPaid: 'إجمالي المدفوع', openingBalance: 'رصيد سابق',
       openingHint: 'موجب = علينا له، سالب = لنا عنده', pay: 'دفع للمورد', receiveMoney: 'استلام فلوس', paymentDone: 'تم حفظ الدفعة',
       purchases: 'المشتريات', payments: 'المدفوعات', ledger: 'كشف الحساب', newPurchase: 'فاتورة شراء', purchase: 'فاتورة شراء', invoiceNo: 'رقم فاتورة المورد',

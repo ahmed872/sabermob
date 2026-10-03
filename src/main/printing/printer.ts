@@ -55,7 +55,11 @@ export class Printer {
       })
       await win.loadURL(`${this.rendererUrl}/print.html?token=${token}`)
       await ready
-      const heightPx = (await win.webContents.executeJavaScript('document.documentElement.scrollHeight')) as number
+      // Height of the actual content (scrollHeight never drops below the window height,
+      // which would feed a long blank strip after every thermal receipt).
+      const heightPx = (await win.webContents.executeJavaScript(
+        `Math.ceil(Array.from(document.body.querySelectorAll('*')).reduce((m, e) => Math.max(m, e.getBoundingClientRect().bottom), 0)) + 8`
+      )) as number
       return { win, heightPx, token }
     } catch (err) {
       this.#jobs.delete(token)

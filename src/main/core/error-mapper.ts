@@ -45,6 +45,10 @@ export function toAppError(err: unknown, log: Logger, context?: string): AppErro
     log.warn('Database busy', { context })
     return new AppError('DATABASE_BUSY')
   }
+  if (/SQLITE_FULL|database or disk is full|ENOSPC/i.test(msg) || e.code === 'ENOSPC') {
+    log.error('Disk full', { context })
+    return new AppError('DISK_FULL')
+  }
   if (e.name === 'ZodError') return new AppError('VALIDATION')
   log.error('Unhandled error', { context, message: msg, code: e.code, stack: e.stack })
   return new AppError('INTERNAL', 'Unexpected error')

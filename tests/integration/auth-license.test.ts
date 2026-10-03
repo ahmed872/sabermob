@@ -157,4 +157,34 @@ describe('license', () => {
     t = await t.reopen()
     expect(t.app.license.state().status).toBe('TRIAL_EXPIRED')
   })
+
+  it('documents a clock set far in the future: lifetime licenses unaffected, trials and timed licenses end early', async () => {
+    t = await createTestApp()
+    await setupOwner(t)
+    await t.app.license.activate(devActivationKey(t.platform.machine, 'PROFESSIONAL', 0), null)
+    const start = t.clock.now.getTime()
+    // someone sets the year wrong (+2 years), uses the app, then fixes the clock
+    t.clock.now = new Date(start + 730 * DAY)
+    await t.app.license.heartbeat()
+    t.clock.now = new Date(start + DAY)
+    t = await t.reopen()
+    expect(t.app.license.state()).toMatchObject({ status: 'ACTIVE', operational: true })
+
+    // same mistake during a timed (30-day) license: the app keeps the latest time it saw
+    const t2 = await createTestApp()
+    await setupOwner(t2)
+    await t2.app.license.activate(devActivationKey(t2.platform.machine, 'BASIC', 30, t2.clock.now), null)
+    const s0 = t2.clock.now.getTime()
+    t2.clock.now = new Date(s0 + 365 * DAY)
+    await t2.app.license.heartbeat()
+    t2.clock.now = new Date(s0 + DAY)
+    const reopened = await t2.reopen()
+    expect(reopened.app.license.state()).toMatchObject({ status: 'EXPIRED', operational: false, clockWarning: true })
+    // business data is untouched and a new key from the vendor fixes it
+    await reopened.app.license.activate(devActivationKey(reopened.platform.machine, 'BASIC', 0), null)
+    expect(reopened.app.license.state().operational).toBe(true)
+    await reopened.close()
+    cleanup(reopened)
+  })
 })
+
