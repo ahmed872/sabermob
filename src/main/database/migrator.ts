@@ -70,6 +70,11 @@ export function migrateDatabase(
   for (const [name, checksum] of applied) {
     const file = migrations.find((m) => m.name === name)
     if (file && file.checksum !== checksum) log?.warn('Applied migration checksum differs from file', { name })
+    // Opening a newer database with an older app version would run old code on a newer schema.
+    if (!file) {
+      db.close()
+      throw new MigrationError(`This database was updated by a newer version of Central Pro (${name}). Install that version or newer.`, null)
+    }
   }
   const pending = migrations.filter((m) => !applied.has(m.name))
   const fresh = !existed || applied.size === 0

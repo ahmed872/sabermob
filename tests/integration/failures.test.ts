@@ -102,4 +102,14 @@ describe('crash safety', () => {
     ).rejects.toThrow(/not a database|integrity|malformed/i)
     cleanup(ctx)
   })
+
+  it('refuses to open a database updated by a newer app version (no silent downgrade)', async () => {
+    const ctx = await createTestApp()
+    await rawQuery(ctx.app.db, `INSERT INTO _app_migrations (name, checksum, appliedAt) VALUES ('9999_from_the_future', 'x', 'now')`)
+    await ctx.close()
+    await expect(
+      AppContext.create({ rootDir: ctx.dir, migrationsDir: MIGRATIONS, deviceName: 'x', platformName: 'x', licensePlatform: new FakeLicensePlatform(), logToFiles: false })
+    ).rejects.toThrow(/newer version/)
+    cleanup(ctx)
+  })
 })
