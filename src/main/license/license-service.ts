@@ -44,6 +44,26 @@ interface StoredLicense {
   issuedAt: Date
 }
 
+/** A verified key as stored, before keys are chained together. */
+type VerifiedKey = StoredLicense & { validDays: number }
+
+/**
+ * Combines every activated key of this PC into one licence.
+ * - Any lifetime key → lifetime.
+ * - Timed keys chain: each one starts at the later of its issue day and the end
+ *   of the keys before it, so a renewal entered early adds its days on top.
+ */
+export function combineKeys(keys: VerifiedKey[]): StoredLicense | null {
+  if (!keys.length) return null
+  const lifetime = keys.filter((k) => k.validDays === 0).sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime())[0]
+  if (lifetime) return { tier: lifetime.tier, expiresAt: null, serial: lifetime.serial, issuedAt: lifetime.issuedAt }
+  const ordered = [...keys].sort((a, b) => a.issuedAt.getTime() - b.issuedAt.getTime() || a.serial - b.serial)
+  let end = 0
+  for (const k of ordered) end = Math.max(end, k.issuedAt.getTime()) + k.validDays * DAY_MS
+  const last = ordered[ordered.length - 1]!
+  return { tier: last.tier, expiresAt: new Date(end), serial: last.serial, issuedAt: last.issuedAt }
+}
+
 /**
  * 15-day trial followed by offline activation with Ed25519-signed keys
  * bound to this machine. Business data is never locked: when the license
@@ -142,19 +162,24 @@ export class LicenseService {
     await this.#loadLicense()
   }
 
-  async #loadLicense(): Promise<void> {
-    const row = await this.db.license.findFirst({ where: { isActive: true }, orderBy: { installedAt: 'desc' } })
-    this.#license = null
-    if (!row?.licenseKey) return
-    const parsed = this.#verifyKey(row.licenseKey)
-    if (!parsed.ok) {
-      this.log.security.warn('Stored license is not valid for this machine', { reason: parsed.reason })
-      return
+  /** Every activated key that is valid for this PC (renewals are kept, not replaced). */
+  async #storedKeys(): Promise<Array<VerifiedKey & { key: string }>> {
+    const rows = await this.db.license.findMany({ where: { licenseKey: { not: null } }, orderBy: { installedAt: 'asc' } })
+    const out = new Map<string, VerifiedKey & { key: string }>()
+    for (const row of rows) {
+      const key = row.licenseKey!
+      const parsed = this.#verifyKey(key)
+      if (parsed.ok) out.set(key, { ...parsed.license, key })
+      else this.log.security.warn('Stored license is not valid for this machine', { reason: parsed.reason })
     }
-    this.#license = parsed.license
+    return [...out.values()]
   }
 
-  #verifyKey(key: string): { ok: true; license: StoredLicense } | { ok: false; reason: 'FORMAT' | 'SIGNATURE' | 'MACHINE' } {
+  async #loadLicense(): Promise<void> {
+    this.#license = combineKeys(await this.#storedKeys())
+  }
+
+  #verifyKey(key: string): { ok: true; license: VerifiedKey } | { ok: false; reason: 'FORMAT' | 'SIGNATURE' | 'MACHINE' } {
     const parts = splitActivationKey(key)
     if (!parts) return { ok: false, reason: 'FORMAT' }
     const payload = decodePayload(parts.payload)
@@ -169,7 +194,7 @@ export class LicenseService {
     if (!bytesEqual(payload.machineId, this.#machineId)) return { ok: false, reason: 'MACHINE' }
     return {
       ok: true,
-      license: { tier: payload.tier, expiresAt: licenseExpiry(payload), serial: payload.serial, issuedAt: payload.issuedAt }
+      license: { tier: payload.tier, expiresAt: licenseExpiry(payload), serial: payload.serial, issuedAt: payload.issuedAt, validDays: payload.validDays }
     }
   }
 
@@ -209,6 +234,7 @@ export class LicenseService {
         ...base,
         status: expired ? 'EXPIRED' : 'ACTIVE',
         tier: this.#license.tier,
+        plan: exp === null ? 'LIFETIME' : 'SUBSCRIPTION',
         operational: !expired,
         daysLeft,
         expiresAt: this.#license.expiresAt?.toISOString() ?? null,
@@ -223,6 +249,7 @@ export class LicenseService {
       ...base,
       status: expired ? 'TRIAL_EXPIRED' : 'TRIAL',
       tier: 'TRIAL',
+      plan: 'TRIAL',
       operational: !expired,
       daysLeft,
       expiresAt: new Date(trialEnds).toISOString(),
@@ -246,29 +273,32 @@ export class LicenseService {
       this.log.security.warn('Activation rejected', { reason: res.reason })
       throw new AppError('LICENSE_INVALID', 'Invalid activation key', { reason: res.reason })
     }
-    const exp = res.license.expiresAt
+    const normalized = key.toUpperCase().replace(/[^0-9A-Z]/g, '')
+    const existing = await this.#storedKeys()
+    if (existing.some((k) => k.key === normalized)) throw new AppError('LICENSE_INVALID', 'Key already used on this computer', { reason: 'USED' })
+    const combined = combineKeys([...existing, res.license])!
+    const exp = combined.expiresAt
     if (exp && exp.getTime() + GRACE_DAYS * DAY_MS < this.#effectiveNow()) {
       throw new AppError('LICENSE_INVALID', 'Activation key already expired', { reason: 'EXPIRED' })
     }
-    const normalized = key.toUpperCase().replace(/[^0-9A-Z]/g, '')
     await this.db.$transaction(async (tx) => {
       await tx.license.updateMany({ where: { isActive: true }, data: { isActive: false } })
       await tx.license.create({
         data: {
           tier: res.license.tier,
           licenseKey: normalized,
-          expiresAt: exp,
+          expiresAt: licenseExpiry({ ...res.license, version: 1, machineId: this.#machineId }),
           lastValidatedAt: this.now(),
           isActive: true
         }
       })
       await this.audit.log(
-        { userId, action: 'license.activated', entity: 'License', metadata: { tier: res.license.tier, serial: res.license.serial, expiresAt: exp?.toISOString() ?? null } },
+        { userId, action: 'license.activated', entity: 'License', metadata: { tier: res.license.tier, serial: res.license.serial, days: res.license.validDays, expiresAt: exp?.toISOString() ?? null } },
         tx
       )
     })
-    this.#license = res.license
-    this.log.security.info('License activated', { tier: res.license.tier, serial: res.license.serial })
+    this.#license = combined
+    this.log.security.info('License activated', { tier: res.license.tier, serial: res.license.serial, expiresAt: exp?.toISOString() ?? null })
     for (const l of this.#listeners) l()
     return this.state()
   }

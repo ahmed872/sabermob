@@ -4,10 +4,12 @@
  *
  * Usage (run from the project root):
  *   node scripts/license/keygen.mts init                 create YOUR signing keys (once)
+ *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX --plan quarterly [--customer "Name"]
  *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX [--tier PROFESSIONAL] [--days 0] [--customer "Name"]
  *   node scripts/license/keygen.mts verify --request ... --key ...
  *   node scripts/license/keygen.mts list
  *
+ * --plan quarterly = the 3-month subscription (src/shared/subscription.ts); renewals add on top.
  * --days 0 (default) = lifetime license. --days 365 = one year from today.
  * The private key lives in ./license-keys/ — keep it secret and back it up.
  * If you lose it you cannot issue keys for installed copies.
@@ -27,6 +29,7 @@ import {
   TIER_CODES,
   type PaidTier
 } from '../../src/shared/license-codec.ts'
+import { SUBSCRIPTION } from '../../src/shared/subscription.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const KEY_DIR = process.env.CENTRAL_LICENSE_KEY_DIR ?? join(ROOT, 'license-keys')
@@ -116,9 +119,11 @@ switch (command) {
   case 'issue': {
     const request = opts.request ?? fail('--request is required')
     const machineId = decodeRequestCode(request) ?? fail('Request code is invalid (check for typos).')
-    const tier = (opts.tier ?? 'PROFESSIONAL').toUpperCase() as PaidTier
+    const quarterly = opts.plan === 'quarterly'
+    if (opts.plan && !quarterly) fail('--plan must be "quarterly"')
+    const tier = (quarterly ? SUBSCRIPTION.tier : (opts.tier ?? 'PROFESSIONAL').toUpperCase()) as PaidTier
     if (!(tier in TIER_CODES)) fail(`--tier must be one of ${Object.keys(TIER_CODES).join(', ')}`)
-    const validDays = Number(opts.days ?? 0)
+    const validDays = quarterly ? SUBSCRIPTION.days : Number(opts.days ?? 0)
     if (!Number.isInteger(validDays) || validDays < 0 || validDays > 65535) fail('--days must be 0..65535')
     const useDev = opts.dev === 'true'
     const serial = opts.serial ? Number(opts.serial) : nextSerial()
@@ -144,8 +149,15 @@ switch (command) {
     console.log(key)
     console.log('')
     if (process.env.GITHUB_STEP_SUMMARY) {
-      const tierAr = { BASIC: 'أساسي (حتى 3 مستخدمين)', PROFESSIONAL: 'احترافي (حتى 15 مستخدم)', ENTERPRISE: 'مؤسسات (بدون حد)' }[tier]
-      const until = validDays === 0 ? 'مدى الحياة ♾️' : `${validDays} يوم — حتى ${exp!.toISOString().slice(0, 10)}`
+      const tierAr = quarterly
+        ? `اشتراك ${SUBSCRIPTION.months} شهور — ${SUBSCRIPTION.priceEgp} جنيه (كل المميزات، بدون حد للمستخدمين)`
+        : { BASIC: 'أساسي (حتى 3 مستخدمين)', PROFESSIONAL: 'احترافي (حتى 15 مستخدم)', ENTERPRISE: 'مؤسسات (بدون حد)' }[tier]
+      const until =
+        validDays === 0
+          ? 'مدى الحياة ♾️'
+          : quarterly
+            ? `${validDays} يوم — بتتضاف على الأيام الباقية عند العميل (لو اشتراكه خلص: من النهارده لحد ${exp!.toISOString().slice(0, 10)})`
+            : `${validDays} يوم — حتى ${exp!.toISOString().slice(0, 10)}`
       appendFileSync(
         process.env.GITHUB_STEP_SUMMARY,
         [
@@ -154,7 +166,7 @@ switch (command) {
           '| | |',
           '|---|---|',
           `| كود الطلب | \`${request.toUpperCase()}\` |`,
-          `| نوع الترخيص | ${tierAr} |`,
+          `| ${quarterly ? 'الباقة' : 'نوع الترخيص'} | ${tierAr} |`,
           `| المدة | ${until} |`,
           `| الرقم التسلسلي | #${serial} |`,
           `| تاريخ الإصدار | ${issuedAt.toISOString().slice(0, 10)} |`,

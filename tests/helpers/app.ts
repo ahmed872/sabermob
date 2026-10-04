@@ -96,9 +96,9 @@ export function actor(t: TestApp) {
 }
 
 /** Issues an activation key with the development private key. */
-export function devActivationKey(machineIdentifier: string, tier: PaidTier = 'PROFESSIONAL', validDays = 0, issuedAt = new Date()): string {
+export function devActivationKey(machineIdentifier: string, tier: PaidTier = 'PROFESSIONAL', validDays = 0, issuedAt = new Date(), serial = 7): string {
   const pem = readFileSync(resolve(__dirname, '../../scripts/license/dev-private-key.pem'), 'utf8')
-  const payload = encodePayload({ tier, machineId: LicenseService.deriveMachineId(machineIdentifier), issuedAt, validDays, serial: 7 })
+  const payload = encodePayload({ tier, machineId: LicenseService.deriveMachineId(machineIdentifier), issuedAt, validDays, serial })
   const sig = sign(null, Buffer.from(signingMessage(payload)), createPrivateKey(pem))
   return formatActivationKey(payload, new Uint8Array(sig))
 }

@@ -20,10 +20,11 @@ export const backgroundJobs: BackgroundJob[] = [
     name: 'license-heartbeat',
     everyMs: 30 * 60_000,
     run: async (ctx, emit) => {
-      const before = ctx.license.state().operational
+      const before = ctx.license.state()
       await ctx.license.heartbeat()
       const state = ctx.license.state()
-      if (state.operational !== before) emit('license:changed', state)
+      // also when the day count changes, so "days left" stays right on a PC that is never restarted
+      if (state.operational !== before.operational || state.daysLeft !== before.daysLeft || state.inGrace !== before.inGrace) emit('license:changed', state)
     }
   },
   {

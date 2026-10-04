@@ -18,6 +18,7 @@ import { mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { afterAll, expect, it, vi } from 'vitest'
 import { rawQuery } from '@main/database/client'
+import { SUBSCRIPTION } from '@shared/subscription'
 import { actor, cleanup, createTestApp, devActivationKey, FakeLicensePlatform, setupOwner, type TestApp } from '../helpers/app'
 
 const DAYS = Number(process.env.SIM_DAYS ?? 1826)
@@ -491,21 +492,30 @@ it(`runs a mobile shop for ${DAYS} days`, async () => {
 
   let licenseUntil = -1
   let cashier2 = false
+  let lapsed = false
+  let keySerial = 100
   let dstFollowUp: number[] = []
   for (let day = 0; day < DAYS; day++) {
     const date = at(day, 12)
     const year = Math.floor(day / 365)
 
-    // licence: 15-day trial, then yearly keys; in year 3 the owner forgets to renew
-    if (day === 10 || (licenseUntil >= 0 && day === licenseUntil - 5 && year !== 3) || (licenseUntil >= 0 && day === licenseUntil + 6)) {
+    // licence: 15-day trial, then the 3-month subscription renewed 5 days early
+    // (the extra days stack); once, in year 3, the owner forgets and the app stops
+    const forgets = year === 3 && !lapsed
+    if (day === 10 || (licenseUntil >= 0 && day === licenseUntil - 5 && !forgets) || (licenseUntil >= 0 && day === licenseUntil + 6)) {
       setNow(at(day, 9, 30))
       if (day === licenseUntil + 6) {
         const st = await t.app.license.state()
         if (st.status !== 'EXPIRED' || st.operational) problem(`Licence 6 days after its end: ${st.status}, operational ${st.operational} (expected EXPIRED, blocked)`)
         bump('licenseLapsed')
+        lapsed = true
       }
-      await t.app.license.activate(devActivationKey('sim-shop-pc', 'PROFESSIONAL', 365, new Date()), OWNER.userId)
-      licenseUntil = day + 365
+      const before = licenseUntil
+      const st = await t.app.license.activate(devActivationKey('sim-shop-pc', SUBSCRIPTION.tier, SUBSCRIPTION.days, new Date(), ++keySerial), OWNER.userId)
+      licenseUntil = day + Math.round((Date.parse(st.expiresAt!) - at(day, 9, 30).getTime()) / 86_400_000)
+      // an early renewal must keep the days that were left
+      if (before >= 0 && day < before && licenseUntil - before < SUBSCRIPTION.days - 1) problem(`Early renewal on ${dayKey(date)} lost days: end moved from day ${before} to ${licenseUntil}`)
+      bump('subscriptionKeys')
     }
     if (licenseUntil >= 0 && day === licenseUntil + 2) {
       setNow(at(day, 9, 30))

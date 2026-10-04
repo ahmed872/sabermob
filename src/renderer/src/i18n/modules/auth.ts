@@ -34,7 +34,15 @@ export const auth = {
       activated: 'Central Pro is activated. Thank you!', tier: 'Edition', serial: 'License #', clockWarning: 'Your computer clock seems to be wrong. Please correct the date and time.',
       dataSafe: 'Your data is safe. You can still create a backup while the app is not activated.', copyCode: 'Copy code',
       tiers: { TRIAL: 'Trial', BASIC: 'Basic', PROFESSIONAL: 'Professional', ENTERPRISE: 'Enterprise' }, maxUsers: 'Up to {{count}} users',
-      activateNow: 'Activate now', manage: 'License & activation'
+      activateNow: 'Activate now', manage: 'License & activation',
+      subDaysLeft: 'Subscription: {{count}} days left', subGrace: 'Subscription ended — {{count}} grace days left',
+      subUntil: 'Subscription active until {{date}} ({{count}} days left)', subExpired: 'Your subscription has ended',
+      plan: 'Plan', planSubscription: '{{months}}-month subscription — {{price}} EGP', noUserLimit: 'unlimited users',
+      renewNotice: 'Your subscription ends in {{count}} days ({{date}}). Renew {{months}} months for {{price}} EGP: send the request code to your vendor and enter the new key.',
+      renewNoticeGrace: 'Your subscription has ended. Central Pro stops in {{count}} days. Renew {{months}} months for {{price}} EGP now.',
+      renewHow: 'To renew: send the request code to your vendor. Each new key adds {{months}} months on top of the time you have left.',
+      enterRenewalKey: 'Enter renewal key', renewed: 'Subscription renewed until {{date}}', hideToday: 'Hide for today',
+      keyUsed: 'This key was already entered on this computer.', keyExpired: 'This key has already expired. Ask your vendor for a new one.'
     }
   },
   ar: {
@@ -72,7 +80,15 @@ export const auth = {
       activated: 'تم تفعيل سنترال برو. شكراً لك!', tier: 'الإصدار', serial: 'رقم الترخيص', clockWarning: 'يبدو أن ساعة الجهاز غير مضبوطة. برجاء تصحيح التاريخ والوقت.',
       dataSafe: 'بياناتك آمنة. يمكنك عمل نسخة احتياطية حتى قبل التفعيل.', copyCode: 'نسخ الكود',
       tiers: { TRIAL: 'تجريبي', BASIC: 'أساسي', PROFESSIONAL: 'احترافي', ENTERPRISE: 'مؤسسات' }, maxUsers: 'حتى {{count}} مستخدم',
-      activateNow: 'فعّل الآن', manage: 'الترخيص والتفعيل'
+      activateNow: 'فعّل الآن', manage: 'الترخيص والتفعيل',
+      subDaysLeft: 'الاشتراك: باقي {{count}} يوم', subGrace: 'الاشتراك خلص — باقي {{count}} يوم سماح',
+      subUntil: 'الاشتراك ساري حتى {{date}} (باقي {{count}} يوم)', subExpired: 'انتهى الاشتراك',
+      plan: 'الباقة', planSubscription: 'اشتراك {{months}} شهور — {{price}} جنيه', noUserLimit: 'بدون حد للمستخدمين',
+      renewNotice: 'اشتراكك هيخلص بعد {{count}} يوم ({{date}}). للتجديد {{months}} شهور بـ {{price}} جنيه: ابعت كود الطلب للمورد وادخل المفتاح الجديد.',
+      renewNoticeGrace: 'اشتراكك خلص، والبرنامج هيقف بعد {{count}} يوم. جدّد دلوقتي {{months}} شهور بـ {{price}} جنيه.',
+      renewHow: 'التجديد: ابعت كود الطلب للمورد. كل مفتاح جديد بيضيف {{months}} شهور على الأيام الباقية من اشتراكك.',
+      enterRenewalKey: 'إدخال مفتاح التجديد', renewed: 'تم تجديد الاشتراك حتى {{date}}', hideToday: 'إخفاء النهارده',
+      keyUsed: 'المفتاح ده اتدخل قبل كده على الجهاز ده.', keyExpired: 'المفتاح ده انتهت صلاحيته. اطلب مفتاح جديد من المورد.'
     }
   }
 }

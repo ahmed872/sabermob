@@ -9,7 +9,7 @@ import { PageLoader } from '../components/ui/spinner'
 import { Dropdown } from '../components/ui/dropdown'
 import { Button } from '../components/ui/button'
 import { Avatar } from '../features/auth/login-screen'
-import { ActivationScreen, LicenseBadge } from '../features/license/activation'
+import { ActivationScreen, LicenseBadge, RenewalNotice } from '../features/license/activation'
 import { BrandMark } from './brand'
 import { NAV } from './nav'
 import { ROUTES, DEFAULT_ROUTE } from './routes'
@@ -122,6 +122,7 @@ export function Shell() {
             />
           </div>
         </header>
+        <RenewalNotice />
         <main className="min-h-0 flex-1 overflow-hidden">
           {operational ? (
             <ErrorBoundary resetKey={location.pathname}>
