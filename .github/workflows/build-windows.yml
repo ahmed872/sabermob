@@ -125,7 +125,9 @@ jobs:
         with:
           name: Central-Pro-Windows
           if-no-files-found: error
-          retention-days: 30
+          # only passes the files to the release job; the Release keeps them for good
+          # (short retention keeps a private repo inside the free 500 MB storage)
+          retention-days: 2
           path: |
             dist/Central-Pro-Setup-*.exe
             dist/Central-Pro-Setup-*.exe.blockmap
@@ -137,6 +139,7 @@ jobs:
         with:
           name: test-screenshots
           if-no-files-found: ignore
+          retention-days: 5
           path: test-results/
 
   release:

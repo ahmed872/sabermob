@@ -44,4 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-results
+          retention-days: 5
           path: test-results/
