@@ -5,7 +5,7 @@ import { createPrivateKey, sign } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { AppContext } from '@main/app/context'
 import { LicenseService, type LicensePlatform } from '@main/license/license-service'
-import { encodePayload, formatActivationKey, signingMessage, type PaidTier } from '@shared/license-codec'
+import { decodeRecoveryCode, encodePayload, encodeRecoveryPayload, formatActivationKey, recoverySigningMessage, signingMessage, type PaidTier } from '@shared/license-codec'
 import type { OnboardingInput } from '@shared/schemas/system'
 
 export const MIGRATIONS = resolve(__dirname, '../../prisma/migrations')
@@ -101,4 +101,12 @@ export function devActivationKey(machineIdentifier: string, tier: PaidTier = 'PR
   const payload = encodePayload({ tier, machineId: LicenseService.deriveMachineId(machineIdentifier), issuedAt, validDays, serial })
   const sig = sign(null, Buffer.from(signingMessage(payload)), createPrivateKey(pem))
   return formatActivationKey(payload, new Uint8Array(sig))
+}
+
+/** A password recovery key for a recovery code, signed with the development key (vendor side). */
+export function devRecoveryKey(recoveryCode: string, issuedAt = new Date()): string {
+  const pem = readFileSync(resolve(__dirname, '../../scripts/license/dev-private-key.pem'), 'utf8')
+  const parsed = decodeRecoveryCode(recoveryCode)!
+  const payload = encodeRecoveryPayload({ machineId: parsed.machineId, nonce: parsed.nonce, issuedAt })
+  return formatActivationKey(payload, new Uint8Array(sign(null, Buffer.from(recoverySigningMessage(payload)), createPrivateKey(pem))))
 }

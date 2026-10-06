@@ -6,6 +6,7 @@
  *   node scripts/license/keygen.mts init                 create YOUR signing keys (once)
  *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX --plan quarterly [--customer "Name"]
  *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX [--tier PROFESSIONAL] [--days 0] [--customer "Name"]
+ *   node scripts/license/keygen.mts recover --code XXXX-XXXX-XXXX-XXXX-XXXX-XXX   owner password recovery key
  *   node scripts/license/keygen.mts verify --request ... --key ...
  *   node scripts/license/keygen.mts list
  *
@@ -20,8 +21,11 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   decodePayload,
+  decodeRecoveryCode,
   decodeRequestCode,
   encodePayload,
+  encodeRecoveryPayload,
+  recoverySigningMessage,
   formatActivationKey,
   licenseExpiry,
   signingMessage,
@@ -178,6 +182,44 @@ switch (command) {
           '```',
           '',
           '> العميل يفتح **الإعدادات ← الترخيص** (أو شاشة التفعيل) ويلصق المفتاح ويضغط **تفعيل**. المفتاح يشتغل على الجهاز ده بس ومن غير إنترنت.',
+          ''
+        ].join('\n')
+      )
+    }
+    break
+  }
+  case 'recover': {
+    // A customer forgot the owner password: the login screen shows a recovery code.
+    const code = opts.code ?? fail('--code is required')
+    const parsed = decodeRecoveryCode(code) ?? fail('Recovery code is invalid (check for typos — it has 23 characters).')
+    const useDev = opts.dev === 'true'
+    const privateKey = loadPrivateKey(useDev)
+    if (!useDev) {
+      const shipped = readFileSync(PUBLIC_KEY_TS, 'utf8').match(/`([\s\S]+)`/)![1]!.trim()
+      if (shipped !== publicPem(privateKey)) fail('This private key does not match the public key built into the app.')
+    }
+    const issuedAt = new Date()
+    const payload = encodeRecoveryPayload({ machineId: parsed.machineId, nonce: parsed.nonce, issuedAt })
+    const key = formatActivationKey(payload, new Uint8Array(sign(null, Buffer.from(recoverySigningMessage(payload)), privateKey)))
+    console.log(`\nPassword recovery key for ${code.toUpperCase()} (valid 7 days, one use)\n`)
+    console.log(key)
+    console.log('')
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      appendFileSync(
+        process.env.GITHUB_STEP_SUMMARY,
+        [
+          '## 🔐 مفتاح استعادة كلمة المرور جاهز',
+          '',
+          `كود الاستعادة: \`${code.toUpperCase()}\` · صالح 7 أيام · يتستخدم مرة واحدة على الجهاز ده بس`,
+          '',
+          '**انسخ المفتاح ده كله وابعته للعميل:**',
+          '',
+          '```',
+          key,
+          '```',
+          '',
+          '> العميل في شاشة الدخول ← **نسيت كلمة المرور؟** ← يلصق المفتاح ← يختار كلمة مرور جديدة.',
+          '> ⚠️ اتأكد إن اللي طالب المفتاح هو صاحب المحل فعلاً (كلمه على رقمه المعروف) قبل ما تبعته.',
           ''
         ].join('\n')
       )

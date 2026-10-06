@@ -25,6 +25,15 @@ export const auth = {
       doneBody: 'You have a free {{days}}-day trial. Sign in with your owner account to start selling.', finishing: 'Setting up…',
       usernameHint: 'English letters and numbers, e.g. ahmed'
     },
+    recovery: {
+      link: 'Forgot your password?', title: 'Forgot password',
+      staffTitle: 'Are you an employee?', staffBody: 'Ask the store owner: Settings → Users → your name → New password. If you have a PIN, you can also sign in with it.',
+      step1: 'Owner: send this recovery code to your vendor (e.g. WhatsApp)', step2: 'Enter the recovery key you receive',
+      keyPlaceholder: 'Paste the recovery key here', account: 'Owner account', confirm: 'Confirm password', mismatch: 'The passwords do not match',
+      newPin: 'New PIN', submit: 'Set new password', done: 'Password changed. Sign in with the new password.',
+      invalid: 'This recovery key is not valid for this computer or was already used. Ask your vendor for a new one with the code above.',
+      expired: 'This recovery key has expired (7 days). Ask your vendor for a new one.'
+    },
     license: {
       title: 'Activation', trial: 'Free trial', trialDaysLeft: 'Trial: {{count}} days left', trialEnded: 'Your free trial has ended',
       expired: 'Your license has expired', active: 'Activated', lifetime: 'Lifetime license', expiresOn: 'Valid until {{date}}',
@@ -70,6 +79,15 @@ export const auth = {
       importLater: 'يمكنك استيراد قائمة أصنافك من Excel لاحقاً (المخزن ← استيراد).', doneTitle: 'محلك جاهز!',
       doneBody: 'لديك فترة تجربة مجانية {{days}} يوم. سجّل الدخول بحساب المالك وابدأ البيع.', finishing: 'جاري التجهيز…',
       usernameHint: 'حروف وأرقام إنجليزية، مثال: ahmed'
+    },
+    recovery: {
+      link: 'نسيت كلمة المرور؟', title: 'نسيت كلمة المرور',
+      staffTitle: 'إنت موظف؟', staffBody: 'اطلب من صاحب المحل: الإعدادات ← المستخدمين ← اسمك ← كلمة مرور جديدة. ولو ليك رقم سري (PIN) تقدر تدخل بيه.',
+      step1: 'لصاحب المحل: ابعت كود الاستعادة ده للمورد (واتساب مثلاً)', step2: 'دخّل مفتاح الاستعادة اللي هيوصلك',
+      keyPlaceholder: 'الصق مفتاح الاستعادة هنا', account: 'حساب صاحب المحل', confirm: 'تأكيد كلمة المرور', mismatch: 'كلمتين المرور مش زي بعض',
+      newPin: 'رقم سري جديد', submit: 'تغيير كلمة المرور', done: 'تم تغيير كلمة المرور. ادخل بالكلمة الجديدة.',
+      invalid: 'مفتاح الاستعادة ده مش صالح للجهاز ده أو اتستخدم قبل كده. اطلب مفتاح جديد من المورد بالكود اللي فوق.',
+      expired: 'مفتاح الاستعادة ده انتهت صلاحيته (7 أيام). اطلب مفتاح جديد من المورد.'
     },
     license: {
       title: 'التفعيل', trial: 'فترة تجريبية', trialDaysLeft: 'الفترة التجريبية: باقي {{count}} يوم', trialEnded: 'انتهت الفترة التجريبية المجانية',

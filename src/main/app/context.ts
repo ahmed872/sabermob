@@ -27,6 +27,7 @@ import { OfferService } from '../services/offer-service'
 import { ReportService } from '../services/report-service'
 import { ImportService } from '../services/import-service'
 import { ResetService } from '../services/reset-service'
+import { RecoveryService } from '../services/recovery-service'
 import { BackupService, plainKeyProtector, recoverInterruptedRestore, type KeyProtector } from '../backup/backup-service'
 
 export interface AppContextOptions {
@@ -75,6 +76,7 @@ export class AppContext {
   backup!: BackupService
   imports!: ImportService
   reset!: ResetService
+  recovery!: RecoveryService
 
   private constructor(readonly options: AppContextOptions) {
     this.now = options.now ?? (() => new Date())
@@ -125,6 +127,7 @@ export class AppContext {
 
     this.imports = new ImportService(this.db, this.settings, this.catalog, this.customers, this.audit, this.gate)
     this.reset = new ResetService(this.db, this.audit, this.paths.media)
+    this.recovery = new RecoveryService(this.db, this.license, this.audit, this.now)
     this.backup = new BackupService({
       db: this.db,
       paths: this.paths,

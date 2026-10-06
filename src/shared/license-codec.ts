@@ -166,3 +166,69 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   for (let i = 0; i < a.length; i++) diff |= a[i]! ^ b[i]!
   return diff === 0
 }
+
+// ── Owner password recovery (vendor-signed, offline) ──
+//
+// Recovery code (shown on the login screen, sent to the vendor):
+//   machineId(8) + nonce(4) + check(2) = 14 bytes → 23 base32 chars
+// Recovery key (from the vendor): payload(16) + Ed25519 signature(64), like an
+// activation key but signed under a different domain so neither can stand in
+// for the other. payload: [0] version [1] 'R' [2..9] machineId [10..13] nonce
+// [14..15] issue day.
+
+export const RECOVERY_SIGNING_DOMAIN = 'CENTRAL-PRO-RECOVERY-V1:'
+const RECOVERY_TYPE = 0x52 // 'R'
+
+export function encodeRecoveryCode(machineId: Uint8Array, nonce: Uint8Array): string {
+  if (machineId.length !== 8 || nonce.length !== 4) throw new Error('bad recovery code parts')
+  const body = new Uint8Array(12)
+  body.set(machineId, 0)
+  body.set(nonce, 8)
+  const [a, b] = fletcher16(body)
+  const bytes = new Uint8Array(14)
+  bytes.set(body, 0)
+  bytes[12] = a
+  bytes[13] = b
+  return groupString(base32Encode(bytes), 4)
+}
+
+export function decodeRecoveryCode(code: string): { machineId: Uint8Array; nonce: Uint8Array } | null {
+  const bytes = base32Decode(code)
+  if (!bytes || bytes.length !== 14) return null
+  const body = bytes.slice(0, 12)
+  const [a, b] = fletcher16(body)
+  if (bytes[12] !== a || bytes[13] !== b) return null
+  return { machineId: body.slice(0, 8), nonce: body.slice(8, 12) }
+}
+
+export interface RecoveryPayload {
+  machineId: Uint8Array
+  nonce: Uint8Array
+  issuedAt: Date
+}
+
+export function encodeRecoveryPayload(p: RecoveryPayload): Uint8Array {
+  const buf = new Uint8Array(16)
+  buf[0] = LICENSE_KEY_VERSION
+  buf[1] = RECOVERY_TYPE
+  buf.set(p.machineId, 2)
+  buf.set(p.nonce, 10)
+  const day = Math.floor((p.issuedAt.getTime() - LICENSE_EPOCH_MS) / DAY_MS)
+  if (day < 0 || day > 0xffff) throw new Error('issue date out of range')
+  new DataView(buf.buffer).setUint16(14, day)
+  return buf
+}
+
+export function decodeRecoveryPayload(buf: Uint8Array): RecoveryPayload | null {
+  if (buf.length !== 16 || buf[0] !== LICENSE_KEY_VERSION || buf[1] !== RECOVERY_TYPE) return null
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
+  return { machineId: buf.slice(2, 10), nonce: buf.slice(10, 14), issuedAt: new Date(LICENSE_EPOCH_MS + view.getUint16(14) * DAY_MS) }
+}
+
+export function recoverySigningMessage(payload: Uint8Array): Uint8Array {
+  const prefix = new TextEncoder().encode(RECOVERY_SIGNING_DOMAIN)
+  const msg = new Uint8Array(prefix.length + payload.length)
+  msg.set(prefix, 0)
+  msg.set(payload, prefix.length)
+  return msg
+}

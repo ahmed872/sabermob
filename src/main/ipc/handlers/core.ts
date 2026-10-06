@@ -94,6 +94,19 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
   // ───────────── auth ─────────────
   r.handle('auth.loginTiles', { input: empty, public: true, allowUnlicensed: true }, (_i, { app }) => app.users.loginTiles())
   r.handle('auth.login', { input: loginSchema, public: true, allowUnlicensed: true }, (input, { app }) => app.auth.login(input))
+  r.handle('auth.recoveryCode', { input: empty, public: true, allowUnlicensed: true }, (_i, { app }) => app.recovery.request())
+  r.handle(
+    'auth.recover',
+    {
+      input: z.object({ key: z.string().min(100).max(200), username: z.string().min(1).max(60), password: z.string().min(1).max(128), pin: z.string().max(8).nullish() }),
+      public: true,
+      allowUnlicensed: true
+    },
+    async (input, { app }) => {
+      await app.recovery.recover(input)
+      return { ok: true as const }
+    }
+  )
   r.handle('auth.unlock', { input: loginSchema.extend({ userId: id }), public: true, allowUnlicensed: true }, (input, { app }) => app.auth.unlock(input))
   r.handle('auth.session', { input: empty, public: true, allowUnlicensed: true }, (_i, { app }) => app.auth.sessionInfo())
   r.handle('auth.lock', { input: empty, allowLocked: true, allowUnlicensed: true }, (_i, { app }) => {

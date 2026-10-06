@@ -8,6 +8,7 @@ import { useApp } from '../../stores/app'
 import { Button } from '../../components/ui/button'
 import { Field, Input } from '../../components/ui/input'
 import { PinPad } from './pin-pad'
+import { RecoveryDialog } from './recovery-dialog'
 import { BrandMark } from '../../layouts/brand'
 import { LanguageToggle } from '../../layouts/preferences'
 
@@ -39,6 +40,7 @@ export function LoginScreen({ onDone, lockedUserId }: { onDone?: () => void; loc
   const [tiles, setTiles] = useState<LoginUserTile[]>([])
   const [selected, setSelected] = useState<LoginUserTile | null>(null)
   const [mode, setMode] = useState<'PIN' | 'PASSWORD'>('PIN')
+  const [recovering, setRecovering] = useState(false)
   const [manual, setManual] = useState(false)
   const [username, setUsername] = useState('')
   const [secret, setSecret] = useState('')
@@ -185,6 +187,19 @@ export function LoginScreen({ onDone, lockedUserId }: { onDone?: () => void; loc
               <button className="mt-4 w-full text-center text-sm font-semibold text-primary" onClick={() => setMode(mode === 'PIN' ? 'PASSWORD' : 'PIN')}>
                 {mode === 'PIN' ? t('auth.usePassword') : t('auth.usePin')}
               </button>
+            ) : null}
+            <button className="mt-3 w-full text-center text-sm font-semibold text-muted hover:text-primary" onClick={() => setRecovering(true)}>
+              {t('recovery.link')}
+            </button>
+            {recovering ? (
+              <RecoveryDialog
+                onClose={() => setRecovering(false)}
+                onDone={() => {
+                  setRecovering(false)
+                  setError(null)
+                  setMode('PASSWORD')
+                }}
+              />
             ) : null}
           </div>
         )}

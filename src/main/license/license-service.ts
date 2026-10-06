@@ -3,7 +3,10 @@ import { AppError } from '@shared/errors'
 import {
   bytesEqual,
   decodePayload,
+  decodeRecoveryPayload,
   encodeRequestCode,
+  recoverySigningMessage,
+  type RecoveryPayload,
   licenseExpiry,
   signingMessage,
   splitActivationKey,
@@ -210,6 +213,25 @@ export class LicenseService {
       this.#clockTampered = false
     }
     await this.#writeSetting('license.lastSeenAt', this.#seal(this.#lastSeen.toISOString()))
+  }
+
+  /** This PC's 8-byte id (as in the request code). */
+  machineId(): Uint8Array {
+    return this.#machineId
+  }
+
+  /** Checks a vendor-signed password recovery key for this PC (signature, machine). */
+  verifyRecoveryKey(key: string): RecoveryPayload | null {
+    const parts = splitActivationKey(key)
+    const payload = parts ? decodeRecoveryPayload(parts.payload) : null
+    if (!parts || !payload) return null
+    let valid = false
+    try {
+      valid = verify(null, Buffer.from(recoverySigningMessage(parts.payload)), this.#publicKey, Buffer.from(parts.signature))
+    } catch {
+      valid = false
+    }
+    return valid && bytesEqual(payload.machineId, this.#machineId) ? payload : null
   }
 
   requestCode(): string {
