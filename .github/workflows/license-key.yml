@@ -1,8 +1,9 @@
 name: توليد مفتاح تفعيل
 
-# Vendor tool: issue a 3-month subscription key (500 EGP) for a customer's PC.
-# The same request code is used for every renewal; each key adds 3 months on
-# top of the days the customer has left. Run it twice for 6 months.
+# Vendor tool: issue a subscription key (500 EGP per 3 months) for a customer's PC.
+# Choose 3, 6 or 12 months; one key carries the whole period (every app version
+# accepts it). The same request code is used for every renewal; each key adds
+# its months on top of the days the customer has left.
 # Needs the repository secret LICENSE_PRIVATE_KEY (contents of private-key.pem).
 # NOTE: in a PUBLIC repository, run logs and inputs are visible to everyone.
 # Activation keys are bound to one PC so they are harmless to others, but do not
@@ -15,6 +16,15 @@ on:
         description: 'كود الطلب من شاشة العميل (مثال: 7K3Q-9XWM-2PDA-HF6R)'
         required: true
         type: string
+      duration:
+        description: 'المدة'
+        required: true
+        type: choice
+        default: '3 شهور — 500 جنيه'
+        options:
+          - '3 شهور — 500 جنيه'
+          - '6 شهور — 1000 جنيه'
+          - '12 شهر — 2000 جنيه'
       customer:
         description: 'ملاحظة للسجل (اختياري — تظهر للعامة لو المستودع عام)'
         required: false
@@ -72,15 +82,21 @@ jobs:
             exit 1
           fi
 
-      - name: إصدار مفتاح الاشتراك (3 شهور — 500 جنيه)
+      - name: إصدار مفتاح الاشتراك (${{ inputs.duration }})
         env:
+          DURATION: ${{ inputs.duration }}
           CENTRAL_LICENSE_KEY_DIR: ${{ runner.temp }}/keys
           REQUEST: ${{ inputs.request_code }}
           CUSTOMER: ${{ inputs.customer }}
         run: |
           REQUEST="$(echo "$REQUEST" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')"
+          case "$DURATION" in
+            12*) PERIODS=4 ;;
+            6*) PERIODS=2 ;;
+            *) PERIODS=1 ;;
+          esac
           node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/license/keygen.mts issue \
-            --request "$REQUEST" --plan quarterly --serial "${{ github.run_number }}" ${CUSTOMER:+--customer "$CUSTOMER"} \
+            --request "$REQUEST" --plan quarterly --periods "$PERIODS" --serial "${{ github.run_number }}" ${CUSTOMER:+--customer "$CUSTOMER"} \
             || { echo '## ❌ كود الطلب غير صحيح — راجعه مع العميل (16 حرف)' >> "$GITHUB_STEP_SUMMARY"; exit 1; }
 
       - name: مسح المفتاح السري

@@ -4,13 +4,14 @@
  *
  * Usage (run from the project root):
  *   node scripts/license/keygen.mts init                 create YOUR signing keys (once)
- *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX --plan quarterly [--customer "Name"]
+ *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX --plan quarterly [--periods 1|2|4] [--customer "Name"]
  *   node scripts/license/keygen.mts issue --request XXXX-XXXX-XXXX-XXXX [--tier PROFESSIONAL] [--days 0] [--customer "Name"]
  *   node scripts/license/keygen.mts recover --code XXXX-XXXX-XXXX-XXXX-XXXX-XXX   owner password recovery key
  *   node scripts/license/keygen.mts verify --request ... --key ...
  *   node scripts/license/keygen.mts list
  *
  * --plan quarterly = the 3-month subscription (src/shared/subscription.ts); renewals add on top.
+ * --periods 2 = 6 months in one key, --periods 4 = a year (any app version accepts it).
  * --days 0 (default) = lifetime license. --days 365 = one year from today.
  * The private key lives in ./license-keys/ — keep it secret and back it up.
  * If you lose it you cannot issue keys for installed copies.
@@ -127,7 +128,10 @@ switch (command) {
     if (opts.plan && !quarterly) fail('--plan must be "quarterly"')
     const tier = (quarterly ? SUBSCRIPTION.tier : (opts.tier ?? 'PROFESSIONAL').toUpperCase()) as PaidTier
     if (!(tier in TIER_CODES)) fail(`--tier must be one of ${Object.keys(TIER_CODES).join(', ')}`)
-    const validDays = quarterly ? SUBSCRIPTION.days : Number(opts.days ?? 0)
+    const periods = Number(opts.periods ?? 1)
+    if (!quarterly && opts.periods) fail('--periods needs --plan quarterly')
+    if (!Number.isInteger(periods) || periods < 1 || periods > 8) fail('--periods must be 1..8')
+    const validDays = quarterly ? SUBSCRIPTION.days * periods : Number(opts.days ?? 0)
     if (!Number.isInteger(validDays) || validDays < 0 || validDays > 65535) fail('--days must be 0..65535')
     const useDev = opts.dev === 'true'
     const serial = opts.serial ? Number(opts.serial) : nextSerial()
@@ -154,7 +158,7 @@ switch (command) {
     console.log('')
     if (process.env.GITHUB_STEP_SUMMARY) {
       const tierAr = quarterly
-        ? `اشتراك ${SUBSCRIPTION.months} شهور — ${SUBSCRIPTION.priceEgp} جنيه (كل المميزات، بدون حد للمستخدمين)`
+        ? `اشتراك ${SUBSCRIPTION.months * periods} شهور — ${SUBSCRIPTION.priceEgp * periods} جنيه (كل المميزات، بدون حد للمستخدمين)`
         : { BASIC: 'أساسي (حتى 3 مستخدمين)', PROFESSIONAL: 'احترافي (حتى 15 مستخدم)', ENTERPRISE: 'مؤسسات (بدون حد)' }[tier]
       const until =
         validDays === 0

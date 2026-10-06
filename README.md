@@ -42,7 +42,7 @@ If `npm install` cannot download Electron (corporate proxy), see
 | Workflow | What it does |
 | --- | --- |
 | **بناء نسخة ويندوز** | On tag `v*` (or manually): tests → Windows installer → runs, installs and uninstalls it on Windows → GitHub Release |
-| **توليد مفتاح تفعيل** | Issue a 3-month subscription key (500 EGP) from a request code; renewals add on top (needs the `LICENSE_PRIVATE_KEY` secret) |
+| **توليد مفتاح تفعيل** | Issue a 3-, 6- or 12-month subscription key (500 EGP per 3 months) from a request code; renewals add on top (needs the `LICENSE_PRIVATE_KEY` secret) |
 | **استعادة كلمة مرور** | Issue a one-time owner password recovery key from the login screen's recovery code |
 | **فحص الكود** | Typecheck, unit/integration and E2E tests on every push |
 

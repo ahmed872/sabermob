@@ -80,4 +80,18 @@ describe('quarterly subscription', () => {
     await t.app.license.activate(devActivationKey(t.platform.machine, 'PROFESSIONAL', 0, day(1)), null)
     expect(t.app.license.state()).toMatchObject({ plan: 'LIFETIME', daysLeft: null, expiresAt: null })
   })
+
+  it('a 6- or 12-month key (one key, several quarters) activates and stacks like the rest', async () => {
+    t = await createTestApp({ clock: { now: day(0) } })
+    await setupOwner(t)
+    const a = actor(t)
+    // 12 months = 4 quarters in one key (vendor tool: --periods 4)
+    let s = await t.app.license.activate(devActivationKey(t.platform.machine, SUBSCRIPTION.tier, SUBSCRIPTION.days * 4, day(0), 21), a.userId)
+    expect(s).toMatchObject({ status: 'ACTIVE', plan: 'SUBSCRIPTION', daysLeft: 360 })
+    // 6 more months entered 10 days before the year ends
+    t.clock.now = day(350)
+    s = await t.app.license.activate(devActivationKey(t.platform.machine, SUBSCRIPTION.tier, SUBSCRIPTION.days * 2, day(350), 22), a.userId)
+    expect(endsOn()).toBe(isoDay(540))
+    expect(s.daysLeft).toBe(190)
+  })
 })
