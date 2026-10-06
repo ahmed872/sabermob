@@ -36,6 +36,27 @@ function requireImportPermission(actor: Actor, e: z.infer<typeof entity>): void 
 export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindow | null, updater: Updater | null): void {
   const opts = { permission: 'manage_backups' as const, allowUnlicensed: true }
 
+  r.handle('data.resetSummary', { input: empty, permission: 'manage_settings', allowUnlicensed: true }, (_i, { app }) => app.reset.summary())
+  r.handle(
+    'data.reset',
+    { input: z.object({ password: z.string().min(1).max(128), confirm: z.literal('RESET'), clearCatalog: z.boolean() }), permission: 'manage_settings', allowUnlicensed: true, skipGate: true },
+    async (i, { app, actor }) => {
+      if (actor!.roleKey !== 'OWNER') throw new AppError('FORBIDDEN', 'Only the owner can start fresh', { permission: 'manage_settings' })
+      await app.gate.run(() => app.auth.confirmPassword(i.password))
+      // A safety copy first: "start fresh" can be undone by restoring it.
+      if (!(await app.backup.status()).unlocked) throw new AppError('INVALID_STATE', 'Backups must be on before starting fresh', { reason: 'resetNeedsBackup' })
+      await app.backup.create('PRE_RESET', actor!.userId)
+      await app.gate.run(() => app.reset.reset({ clearCatalog: i.clearCatalog }, actor!))
+      // Open screens and a saved cart point at removed data: start the app again.
+      await session?.defaultSession?.clearStorageData({ storages: ['localstorage'] }).catch(() => undefined)
+      setTimeout(() => {
+        if (!process.env.CENTRAL_E2E_PDF_DIR) electronApp.relaunch()
+        electronApp.exit(0)
+      }, 400)
+      return { ok: true as const }
+    }
+  )
+
   r.handle('backup.status', { input: empty, ...opts }, (_i, { app }) => app.backup.status())
   r.handle('backup.list', { input: empty, ...opts }, (_i, { app }) => app.backup.list())
   // Long-running work takes the database gate only for short moments.

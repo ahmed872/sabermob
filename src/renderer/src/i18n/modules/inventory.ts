@@ -3,7 +3,7 @@ export const inventory = {
     inventory: {
       title: 'Inventory', subtitle: 'Products, stock and categories', products: 'Products', stock: 'Stock movements', setup: 'Categories & brands',
       newProduct: 'New product', editProduct: 'Edit product', productName: 'Product name', altName: 'Name in other language', altNameHint: 'Helps search in Arabic and English',
-      productType: 'What are you adding?', category: 'Category', brand: 'Brand', model: 'Phone model', compatibleModel: 'For phone model', supplier: 'Default supplier',
+      productType: 'What are you adding?', category: 'Category', brand: 'Brand', model: 'Phone model', compatibleModel: 'Fits phone model', phoneBrand: 'Phone brand', phoneBrandHint: 'The phone this accessory is for', compatibleModelHint: 'The cashier finds it by typing the phone name', categoryHint: 'e.g. Cases or Chargers — for search and reports', costPriceHint: 'What you paid — used for profit', minPriceHint: 'Cashiers cannot sell below it without your approval', minStockHint: 'At this quantity it shows as “running low”', supplier: 'Default supplier',
       sellPrice: 'Selling price', costPrice: 'Cost price', minPrice: 'Minimum price', wholesalePrice: 'Wholesale price', stockQty: 'In stock', minStock: 'Alert when below',
       maxStock: 'Maximum stock', openingStock: 'Quantity you have now', barcode: 'Barcode', barcodes: 'Barcodes', addBarcode: 'Add barcode', generateBarcode: 'Generate',
       sku: 'Item code (SKU)', warranty: 'Warranty (days)', trackStock: 'Track stock quantity', trackSerials: 'Track each unit by IMEI / serial', serials: 'IMEI / serial numbers',
@@ -36,7 +36,7 @@ export const inventory = {
     inventory: {
       title: 'المخزن', subtitle: 'الأصناف والكميات والأقسام', products: 'الأصناف', stock: 'حركة المخزون', setup: 'الأقسام والماركات',
       newProduct: 'صنف جديد', editProduct: 'تعديل صنف', productName: 'اسم الصنف', altName: 'الاسم باللغة الأخرى', altNameHint: 'يساعد في البحث بالعربي والإنجليزي',
-      productType: 'إيه اللي بتضيفه؟', category: 'القسم', brand: 'الماركة', model: 'موديل الموبايل', compatibleModel: 'لموديل', supplier: 'المورد الافتراضي',
+      productType: 'إيه اللي بتضيفه؟', category: 'القسم', brand: 'الماركة', model: 'موديل الموبايل', compatibleModel: 'يركب على موديل', phoneBrand: 'ماركة الموبايل', phoneBrandHint: 'الموبايل اللي الإكسسوار ده معمول له', compatibleModelHint: 'الكاشير يلاقيه لما يكتب اسم الموبايل', categoryHint: 'زي جرابات أو شواحن — للبحث والتقارير', costPriceHint: 'اشتريته بكام — عشان يحسب الربح', minPriceHint: 'الكاشير ميقدرش يبيع بأقل منه من غير موافقتك', minStockHint: 'لما الكمية توصل للرقم ده يظهر تنبيه «قرب يخلص»', supplier: 'المورد الافتراضي',
       sellPrice: 'سعر البيع', costPrice: 'سعر التكلفة', minPrice: 'أقل سعر بيع', wholesalePrice: 'سعر الجملة', stockQty: 'الكمية بالمخزن', minStock: 'تنبيه عند أقل من',
       maxStock: 'أقصى كمية', openingStock: 'الكمية اللي عندك دلوقتي', barcode: 'الباركود', barcodes: 'الباركودات', addBarcode: 'إضافة باركود', generateBarcode: 'توليد',
       sku: 'كود الصنف', warranty: 'الضمان (أيام)', trackStock: 'متابعة الكمية بالمخزن', trackSerials: 'متابعة كل قطعة برقم IMEI / سيريال', serials: 'أرقام IMEI / السيريال',

@@ -90,7 +90,8 @@ export const errors = {
         variantHasStock: 'This variant still has {{stock}} in stock. Set its quantity to 0 first.',
         productHasStock: 'This item still has {{stock}} in stock. Set it to 0 first, or turn off “Available for sale” instead of deleting.',
         noBackupPassword: 'Set a backup password first (Settings → Backup).',
-        restoreRunning: 'A restore is running. Wait for it to finish.'
+        restoreRunning: 'A restore is running. Wait for it to finish.',
+        resetNeedsBackup: 'Backups must be working first, so a safety copy can be taken (Settings → Backup).'
       },
       fields: {
         name: 'the name', phone: 'the mobile number', phone2: 'the second number', price: 'the price', sellPrice: 'the selling price', costPrice: 'the cost',
@@ -193,7 +194,8 @@ export const errors = {
         variantHasStock: 'النوع ده لسه فيه كمية ({{stock}}). خلّي كميته 0 الأول.',
         productHasStock: 'الصنف لسه فيه كمية ({{stock}}). خلّيها 0 الأول، أو اقفل «متاح للبيع» بدل الحذف.',
         noBackupPassword: 'اعمل كلمة مرور للنسخ الاحتياطي الأول (الإعدادات ← النسخ الاحتياطي).',
-        restoreRunning: 'فيه استرجاع شغال دلوقتي، استنى لما يخلص.'
+        restoreRunning: 'فيه استرجاع شغال دلوقتي، استنى لما يخلص.',
+        resetNeedsBackup: 'لازم النسخ الاحتياطي يكون شغال الأول عشان ناخد نسخة أمان قبل المسح (الإعدادات ← النسخ الاحتياطي).'
       },
       fields: {
         name: 'الاسم', phone: 'رقم الموبايل', phone2: 'الرقم التاني', price: 'السعر', sellPrice: 'سعر البيع', costPrice: 'التكلفة',

@@ -1,5 +1,5 @@
 /** Contract for backup/restore, workspace bundles and data import. */
-import type { BackupInspection, BackupRecordDto, BackupStatus, BackupVerification } from '../types/backup'
+import type { BackupInspection, BackupRecordDto, BackupStatus, BackupVerification, ResetSummary } from '../types/backup'
 import type { ImportEntity, ImportMapping, ImportParseResult, ImportPreview, ImportResult } from '../import'
 
 type Empty = Record<string, never> | undefined
@@ -19,6 +19,10 @@ export interface DataContract {
   'backup.exportBundle': { in: Empty; out: { path: string | null } }
   'backup.chooseFolder': { in: { target: 'directory' | 'mirrorDirectory'; clear?: boolean }; out: { path: string | null } }
   'backup.openFolder': { in: Empty; out: Ok }
+  /** "Start fresh": what would be removed. */
+  'data.resetSummary': { in: Empty; out: ResetSummary }
+  /** Owner only: safety backup, then remove the business data; the app restarts. */
+  'data.reset': { in: { password: string; confirm: 'RESET'; clearCatalog: boolean }; out: Ok }
 
   /** `data` is the file content as base64 (CSV or XLSX, max 15 MB). */
   'import.parse': { in: { entity: ImportEntity; fileName: string; data: string }; out: ImportParseResult }

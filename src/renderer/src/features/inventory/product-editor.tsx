@@ -353,7 +353,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                 <Field label={t('inventory.altName')} hint={t('inventory.altNameHint')} optional>
                   <Input value={product.altName} onChange={(e) => setProduct({ ...product, altName: e.target.value })} />
                 </Field>
-                <Field label={t('inventory.category')} optional>
+                <Field label={t('inventory.category')} hint={t('inventory.categoryHint')} optional>
                   <Select value={product.categoryId} onChange={(e) => setProduct({ ...product, categoryId: e.target.value })}>
                     <option value="">{t('common.none')}</option>
                     {categories.data?.map((c) => (
@@ -365,7 +365,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                 </Field>
                 {showCompat ? (
                   <>
-                    <Field label={t('inventory.brand')} optional>
+                    <Field label={isDevice ? t('inventory.brand') : t('inventory.phoneBrand')} hint={isDevice ? undefined : t('inventory.phoneBrandHint')} optional>
                       <Select value={product.brandId} onChange={(e) => setProduct({ ...product, brandId: e.target.value, deviceModelId: '' })}>
                         <option value="">{t('common.none')}</option>
                         {brands.data?.map((b) => (
@@ -375,7 +375,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                         ))}
                       </Select>
                     </Field>
-                    <Field label={isDevice ? t('inventory.model') : t('inventory.compatibleModel')} optional>
+                    <Field label={isDevice ? t('inventory.model') : t('inventory.compatibleModel')} hint={isDevice ? undefined : t('inventory.compatibleModelHint')} optional>
                       <Select value={product.deviceModelId} disabled={!product.brandId} onChange={(e) => setProduct({ ...product, deviceModelId: e.target.value })}>
                         <option value="">{t('common.none')}</option>
                         {models.data?.map((m) => (
@@ -398,11 +398,11 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                     <MoneyInput value={first.sellPrice} onChange={(v) => updateVariant(variants.indexOf(first), { sellPrice: v ?? 0 })} className="h-11 text-base font-bold" />
                   </Field>
                   {canCost ? (
-                    <Field label={t('inventory.costPrice')}>
+                    <Field label={t('inventory.costPrice')} hint={t('inventory.costPriceHint')}>
                       <MoneyInput value={first.costPrice} onChange={(v) => updateVariant(variants.indexOf(first), { costPrice: v ?? 0 })} />
                     </Field>
                   ) : null}
-                  <Field label={t('inventory.minPrice')} optional>
+                  <Field label={t('inventory.minPrice')} hint={t('inventory.minPriceHint')} optional>
                     <MoneyInput allowEmpty value={first.minPrice} onChange={(v) => updateVariant(variants.indexOf(first), { minPrice: v })} />
                   </Field>
                 </div>
@@ -695,7 +695,7 @@ function SingleStockFields({
               </div>
             </Field>
           )}
-          <Field label={t('inventory.minStock')}>
+          <Field label={t('inventory.minStock')} hint={t('inventory.minStockHint')}>
             <NumberInput allowEmpty value={v.minStock} onChange={(n) => onChange({ minStock: n })} placeholder="2" />
           </Field>
         </>

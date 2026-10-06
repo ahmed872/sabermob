@@ -1,5 +1,14 @@
 export const data = {
   en: {
+    reset: {
+      title: 'Start fresh', open: 'Start fresh…',
+      body: 'Removes sales, products, customers, suppliers, purchases, repairs, shifts and offers — for example after a trial period. Store details, users, settings and activation stay.',
+      willDelete: 'Will be removed:', counts: '{{sales}} sales · {{products}} products · {{customers}} customers · {{suppliers}} suppliers · {{repairs}} repairs, with purchases, shifts, stock history and offers.',
+      willKeep: 'Will stay:', keepList: 'Store details, users and roles, settings, activation, categories and brands, ready-made services.',
+      clearCatalog: 'Also remove categories, brands, phone models and services',
+      backupNote: 'A safety backup is made first (listed as “Before starting fresh”): restore it to undo. The app restarts afterwards.',
+      password: 'Your password', typeWord: 'Type “{{word}}” to confirm', word: 'DELETE', confirm: 'Delete and start fresh'
+    },
     update: {
       title: 'Updates', current: 'Installed version {{version}}', check: 'Check for updates', checking: 'Checking…', none: 'You have the latest version',
       available: 'Version {{version}} is available', download: 'Download', downloading: 'Downloading… {{progress}}%', ready: 'Version {{version}} is ready to install',
@@ -17,7 +26,7 @@ export const data = {
       folders: 'Where backups are saved', folder: 'Backup folder', mirror: 'Extra copy (USB / external drive)', mirrorHint: 'Each backup is also copied here. Recommended: a USB stick or another disk.', none: 'Not set',
       change: 'Change', choose: 'Choose', reset: 'Use default', remove: 'Remove',
       history: 'Backups', verify: 'Check', verified: 'Backup is healthy: {{products}} products, {{sales}} sales', restore: 'Restore', missing: 'File missing', failed: 'Failed',
-      kinds: { AUTO: 'Automatic', MANUAL: 'Manual', PRE_RESTORE: 'Before restore', PRE_UPDATE: 'Before update', BUNDLE: 'Transfer bundle' },
+      kinds: { AUTO: 'Automatic', MANUAL: 'Manual', PRE_RESTORE: 'Before restore', PRE_UPDATE: 'Before update', PRE_RESET: 'Before starting fresh', BUNDLE: 'Transfer bundle' },
       move: 'Move to another computer', moveBody: 'Save the whole shop (data, photos and settings) in one encrypted file. On the new computer choose “Restore from backup” on the first screen.',
       exportBundle: 'Save transfer file', bundleSaved: 'Transfer file saved: {{path}}',
       restoreTitle: 'Restore backup', restoreWarn: 'All current data on this computer will be replaced by this backup.', restoreSafety: 'A safety copy of the current data is saved first, so this can be undone.',
@@ -43,6 +52,15 @@ export const data = {
     }
   },
   ar: {
+    reset: {
+      title: 'البدء من جديد', open: 'البدء من جديد…',
+      body: 'بيمسح المبيعات والأصناف والعملاء والموردين والمشتريات والصيانة والورديات والعروض — مثلاً بعد فترة تجربة. بيانات المحل والمستخدمين والإعدادات والتفعيل بيفضلوا زي ما هم.',
+      willDelete: 'هيتمسح:', counts: '{{sales}} فاتورة · {{products}} صنف · {{customers}} عميل · {{suppliers}} مورد · {{repairs}} صيانة، ومعاهم المشتريات والورديات وحركة المخزون والعروض.',
+      willKeep: 'هيفضل:', keepList: 'بيانات المحل، المستخدمين والصلاحيات، الإعدادات، التفعيل، الأقسام والماركات، الخدمات الجاهزة.',
+      clearCatalog: 'امسح كمان الأقسام والماركات والموديلات والخدمات',
+      backupNote: 'هتتعمل نسخة أمان الأول (باسم «قبل البدء من جديد») — لو غيرت رأيك استرجعها. البرنامج هيقفل ويفتح تاني بعد المسح.',
+      password: 'كلمة المرور بتاعتك', typeWord: 'اكتب «{{word}}» للتأكيد', word: 'امسح', confirm: 'امسح وابدأ من جديد'
+    },
     update: {
       title: 'التحديثات', current: 'الإصدار الحالي {{version}}', check: 'البحث عن تحديث', checking: 'جاري البحث…', none: 'عندك أحدث إصدار',
       available: 'الإصدار {{version}} متاح', download: 'تحميل', downloading: 'جاري التحميل… {{progress}}%', ready: 'الإصدار {{version}} جاهز للتثبيت',
@@ -60,7 +78,7 @@ export const data = {
       folders: 'مكان حفظ النسخ', folder: 'مجلد النسخ الاحتياطي', mirror: 'نسخة إضافية (فلاشة / هارد خارجي)', mirrorHint: 'كل نسخة بتتنسخ هنا كمان. يفضل فلاشة أو هارد تاني.', none: 'غير محدد',
       change: 'تغيير', choose: 'اختيار', reset: 'الافتراضي', remove: 'إزالة',
       history: 'النسخ الاحتياطية', verify: 'فحص', verified: 'النسخة سليمة: {{products}} صنف، {{sales}} عملية بيع', restore: 'استرجاع', missing: 'الملف مش موجود', failed: 'فشلت',
-      kinds: { AUTO: 'تلقائية', MANUAL: 'يدوية', PRE_RESTORE: 'قبل الاسترجاع', PRE_UPDATE: 'قبل التحديث', BUNDLE: 'ملف نقل' },
+      kinds: { AUTO: 'تلقائية', MANUAL: 'يدوية', PRE_RESTORE: 'قبل الاسترجاع', PRE_UPDATE: 'قبل التحديث', PRE_RESET: 'قبل البدء من جديد', BUNDLE: 'ملف نقل' },
       move: 'النقل لجهاز تاني', moveBody: 'احفظ المحل كله (البيانات والصور والإعدادات) في ملف واحد مشفر. على الجهاز الجديد اختار «استرجاع من نسخة احتياطية» في أول شاشة.',
       exportBundle: 'حفظ ملف النقل', bundleSaved: 'تم حفظ ملف النقل: {{path}}',
       restoreTitle: 'استرجاع نسخة احتياطية', restoreWarn: 'كل البيانات الحالية على الجهاز ده هتتبدل بالنسخة دي.', restoreSafety: 'هيتعمل نسخة أمان من البيانات الحالية الأول، فتقدر ترجع فيها.',

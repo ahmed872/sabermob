@@ -13,6 +13,8 @@ import { PageLoader } from '../../components/ui/spinner'
 import { DataTable } from '../../components/ui/table'
 import { SettingsGroupForm } from '../settings/settings-form'
 import { pickBackupFile, RestoreDialog } from './restore-dialog'
+import { StartFreshCard } from './start-fresh'
+import { useApp } from '../../stores/app'
 
 function PasswordForm({ needsCurrent, onDone, cta }: { needsCurrent?: boolean; onDone?: () => void; cta: string }) {
   const { t } = useTranslation()
@@ -71,6 +73,7 @@ function UnlockForm() {
 /** Settings → Backup & restore. */
 export function BackupSection() {
   const { t } = useTranslation()
+  const isOwner = useApp((st) => st.session?.roleKey === 'OWNER')
   const status = useApi('backup.status')
   const list = useApi('backup.list')
   const [restoring, setRestoring] = useState<BackupInspection | null>(null)
@@ -251,6 +254,7 @@ export function BackupSection() {
             <PasswordForm needsCurrent={!s.unlocked} cta={t('backup.setPassword')} />
           </Card>
         ) : null}
+        {isOwner ? <StartFreshCard /> : null}
       </div>
 
       {restoring ? <RestoreDialog info={restoring} onClose={() => setRestoring(null)} /> : null}

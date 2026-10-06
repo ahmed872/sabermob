@@ -1,4 +1,13 @@
-export type BackupKind = 'AUTO' | 'MANUAL' | 'PRE_RESTORE' | 'PRE_UPDATE' | 'BUNDLE'
+export type BackupKind = 'AUTO' | 'MANUAL' | 'PRE_RESTORE' | 'PRE_UPDATE' | 'PRE_RESET' | 'BUNDLE'
+
+/** What "start fresh" removes (counts shown before confirming). */
+export interface ResetSummary {
+  sales: number
+  products: number
+  customers: number
+  suppliers: number
+  repairs: number
+}
 
 export interface BackupRecordDto {
   id: string

@@ -322,6 +322,13 @@ export class AuthService {
     return this.authorizeAll(actor, [permission], overrideToken)
   }
 
+  /** Re-checks the signed-in user's password before a dangerous action. */
+  async confirmPassword(password: string): Promise<void> {
+    const a = this.#actor
+    if (!a) throw new AppError('UNAUTHENTICATED')
+    await this.#verify(a.userId, null, password, 'PASSWORD')
+  }
+
   async changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
     const a = this.#actor
     if (!a) throw new AppError('UNAUTHENTICATED')
