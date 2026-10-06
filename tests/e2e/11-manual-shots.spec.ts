@@ -268,6 +268,43 @@ test('capture screenshots for the user booklet', async () => {
       await btn(page, 'مستخدم جديد').click()
     })
     await page.keyboard.press('Escape')
+    // ── newer screens (Q&A booklet) ──
+    await step('70-product-hints', async () => {
+      await go('/inventory/products/new')
+      await expect(page.getByText('زي جرابات أو شواحن — للبحث والتقارير')).toBeVisible()
+    })
+    await step('71-product-prices', async () => {
+      await page.getByText('اشتريته بكام — عشان يحسب الربح').scrollIntoViewIfNeeded()
+      await page.mouse.wheel(0, 250)
+    })
+    await step('72-phone-countby', async () => {
+      await go('/inventory/products/new')
+      await page.getByRole('button', { name: /موبايل جديد/ }).click()
+      await page.getByText('تعدّ الأجهزة دي بـ').scrollIntoViewIfNeeded()
+      await page.mouse.wheel(0, 200)
+    })
+    await step('73-edit-qty', async () => {
+      await go(`/inventory/products/${caseP.id}`)
+      await btn(page, 'تعديل الكمية').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('74-start-fresh', async () => {
+      await go('/settings/backup')
+      await btn(page, 'البدء من جديد…').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('75-recovery', async () => {
+      await invoke('auth.logout')
+      await page.getByText(OWNER.name).first().click()
+      await btn(page, 'نسيت كلمة المرور؟').click()
+      await expect(page.getByTestId('recovery-code')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    for (const d of OWNER.pin) await page.getByRole('button', { name: d, exact: true }).click()
+    await page.getByRole('button', { name: 'submit' }).click()
+    await expect(page.getByRole('link', { name: 'الإعدادات' })).toBeVisible()
     await step('58-lock', async () => {
       await page.getByRole('button', { name: 'قفل' }).last().click()
       await expect(page.getByText('أدخل الرقم السري')).toBeVisible()
