@@ -62,8 +62,10 @@ export function registerDataHandlers(r: ApiRouter, getWindow: () => BrowserWindo
   // Long-running work takes the database gate only for short moments.
   r.handle('backup.create', { input: empty, ...opts, skipGate: true }, (_i, { app, actor }) => app.backup.create('MANUAL', actor!.userId))
   r.handle('backup.verify', { input: z.object({ id }), ...opts, skipGate: true }, (i, { app }) => app.backup.verify(i.id))
-  r.handle('backup.setPassword', { input: z.object({ password, currentPassword: z.string().max(128).optional() }), ...opts }, async (i, { app, actor }) => {
-    await app.backup.setPassword(i.password, actor!.userId, i.currentPassword)
+  r.handle('backup.setPassword', { input: z.object({ password, currentPassword: z.string().max(128).optional() }), ...opts, skipGate: true }, async (i, { app, actor }) => {
+    await app.gate.run(() => app.backup.setPassword(i.password, actor!.userId, i.currentPassword))
+    // Older backups keep the old password: make one with the new password right away.
+    await app.backup.create('MANUAL', actor!.userId)
     return { ok: true as const }
   })
   r.handle('backup.unlock', { input: z.object({ password: z.string().min(1).max(128) }), ...opts }, async (i, { app, actor }) => {

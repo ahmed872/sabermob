@@ -98,13 +98,29 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
   r.handle(
     'auth.recover',
     {
-      input: z.object({ key: z.string().min(100).max(200), username: z.string().min(1).max(60), password: z.string().min(1).max(128), pin: z.string().max(8).nullish() }),
+      input: z.object({
+        key: z.string().min(100).max(200),
+        username: z.string().min(1).max(60),
+        password: z.string().min(1).max(128),
+        pin: z.string().max(8).nullish(),
+        alsoBackup: z.boolean().default(true)
+      }),
       public: true,
-      allowUnlicensed: true
+      allowUnlicensed: true,
+      skipGate: true
     },
     async (input, { app }) => {
-      await app.recovery.recover(input)
-      return { ok: true as const }
+      await app.gate.run(() => app.recovery.recover(input))
+      // The backup password is usually the forgotten one too. On this PC the backup key is
+      // available without it, so switch backups to the new password and make one right away,
+      // otherwise the data could never be moved to another PC.
+      let backupPasswordChanged = false
+      if (input.alsoBackup && (await app.backup.status()).unlocked) {
+        await app.gate.run(() => app.backup.setPassword(input.password, null))
+        await app.backup.create('MANUAL', null)
+        backupPasswordChanged = true
+      }
+      return { ok: true as const, backupPasswordChanged }
     }
   )
   r.handle('auth.unlock', { input: loginSchema.extend({ userId: id }), public: true, allowUnlicensed: true }, (input, { app }) => app.auth.unlock(input))

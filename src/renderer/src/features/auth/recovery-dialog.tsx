@@ -6,6 +6,7 @@ import { ApiError, call } from '../../lib/api'
 import { errorMessage } from '../../lib/query'
 import { Button } from '../../components/ui/button'
 import { Dialog } from '../../components/ui/dialog'
+import { Checkbox } from '../../components/ui/misc'
 import { Field, Input, Select, Textarea } from '../../components/ui/input'
 
 /**
@@ -21,6 +22,7 @@ export function RecoveryDialog({ onClose, onDone }: { onClose: () => void; onDon
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [pin, setPin] = useState('')
+  const [alsoBackup, setAlsoBackup] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,8 +40,8 @@ export function RecoveryDialog({ onClose, onDone }: { onClose: () => void; onDon
     setBusy(true)
     setError(null)
     try {
-      await call('auth.recover', { key: key.trim(), username, password, pin: pin || null })
-      toast.success(t('recovery.done'))
+      const res = await call('auth.recover', { key: key.trim(), username, password, pin: pin || null, alsoBackup })
+      toast.success(res.backupPasswordChanged ? t('recovery.doneWithBackup') : t('recovery.done'), { duration: 8000 })
       onDone(username)
     } catch (err) {
       const reason = err instanceof ApiError ? err.details?.reason : undefined
@@ -119,6 +121,7 @@ export function RecoveryDialog({ onClose, onDone }: { onClose: () => void; onDon
         <Field label={t('recovery.newPin')} optional>
           <Input dir="ltr" inputMode="numeric" maxLength={8} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
         </Field>
+        <Checkbox checked={alsoBackup} onCheckedChange={setAlsoBackup} label={t('recovery.alsoBackup')} />
         {error ? <p className="rounded-xl bg-danger-soft p-2 text-sm font-semibold text-danger">{error}</p> : null}
       </div>
     </Dialog>

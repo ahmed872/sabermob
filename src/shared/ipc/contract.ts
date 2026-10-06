@@ -65,7 +65,7 @@ export interface CoreContract {
   /** Forgotten owner password: the code to send to the vendor. */
   'auth.recoveryCode': { in: Empty; out: { code: string; owners: Array<{ username: string; fullName: string }> } }
   /** Sets a new owner password with the vendor's recovery key (one use, this PC only). */
-  'auth.recover': { in: { key: string; username: string; password: string; pin?: string | null }; out: { ok: true } }
+  'auth.recover': { in: { key: string; username: string; password: string; pin?: string | null; alsoBackup?: boolean }; out: { ok: true; backupPasswordChanged: boolean } }
   'auth.unlock': { in: LoginInput & { userId: string }; out: SessionInfo }
   'auth.session': { in: Empty; out: SessionInfo | null }
   'auth.lock': { in: Empty; out: { ok: true } }

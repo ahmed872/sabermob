@@ -237,7 +237,10 @@ export class BackupService {
     const key = this.#requireKey()
     const wrap = (await this.#wrap())!
     const stamp = this.d.now().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-    const file = target ?? join(this.directory, `central-${kind.toLowerCase()}-${stamp}${kind === 'BUNDLE' ? EXT.bundle : EXT.backup}`)
+    const ext = kind === 'BUNDLE' ? EXT.bundle : EXT.backup
+    // Two backups in the same second must not overwrite each other.
+    let file = target ?? join(this.directory, `central-${kind.toLowerCase()}-${stamp}${ext}`)
+    for (let n = 2; !target && existsSync(file); n++) file = join(this.directory, `central-${kind.toLowerCase()}-${stamp}-${n}${ext}`)
     const snap = join(this.d.paths.temp, `snapshot-${randomUUID()}.db`)
     let record: BackupRecordDto
     try {

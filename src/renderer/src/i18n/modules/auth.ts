@@ -30,7 +30,7 @@ export const auth = {
       staffTitle: 'Are you an employee?', staffBody: 'Ask the store owner: Settings → Users → your name → New password. If you have a PIN, you can also sign in with it.',
       step1: 'Owner: send this recovery code to your vendor (e.g. WhatsApp)', step2: 'Enter the recovery key you receive',
       keyPlaceholder: 'Paste the recovery key here', account: 'Owner account', confirm: 'Confirm password', mismatch: 'The passwords do not match',
-      newPin: 'New PIN', submit: 'Set new password', done: 'Password changed. Sign in with the new password.',
+      newPin: 'New PIN', submit: 'Set new password', done: 'Password changed. Sign in with the new password.', alsoBackup: 'Use the new password for backups too (recommended)', doneWithBackup: 'Password changed. Backups now use the new password too, and a new backup was made with it. Sign in with the new password.',
       invalid: 'This recovery key is not valid for this computer or was already used. Ask your vendor for a new one with the code above.',
       expired: 'This recovery key has expired (7 days). Ask your vendor for a new one.'
     },
@@ -85,7 +85,7 @@ export const auth = {
       staffTitle: 'إنت موظف؟', staffBody: 'اطلب من صاحب المحل: الإعدادات ← المستخدمين ← اسمك ← كلمة مرور جديدة. ولو ليك رقم سري (PIN) تقدر تدخل بيه.',
       step1: 'لصاحب المحل: ابعت كود الاستعادة ده للمورد (واتساب مثلاً)', step2: 'دخّل مفتاح الاستعادة اللي هيوصلك',
       keyPlaceholder: 'الصق مفتاح الاستعادة هنا', account: 'حساب صاحب المحل', confirm: 'تأكيد كلمة المرور', mismatch: 'كلمتين المرور مش زي بعض',
-      newPin: 'رقم سري جديد', submit: 'تغيير كلمة المرور', done: 'تم تغيير كلمة المرور. ادخل بالكلمة الجديدة.',
+      newPin: 'رقم سري جديد', submit: 'تغيير كلمة المرور', done: 'تم تغيير كلمة المرور. ادخل بالكلمة الجديدة.', alsoBackup: 'استخدم الكلمة الجديدة للنسخ الاحتياطي كمان (مستحسن)', doneWithBackup: 'تم تغيير كلمة المرور، والنسخ الاحتياطي بقى بالكلمة الجديدة واتعملت نسخة جديدة بيها. ادخل بالكلمة الجديدة.',
       invalid: 'مفتاح الاستعادة ده مش صالح للجهاز ده أو اتستخدم قبل كده. اطلب مفتاح جديد من المورد بالكود اللي فوق.',
       expired: 'مفتاح الاستعادة ده انتهت صلاحيته (7 أيام). اطلب مفتاح جديد من المورد.'
     },

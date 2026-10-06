@@ -144,12 +144,12 @@ describe('encrypted backups', () => {
 
   it('changing the password keeps older backups readable with the old one', async () => {
     const old = await t.app.backup.create('MANUAL', null)
-    const oldCopy = join(t.dir, 'old.cpbak')
-    copyFileSync(fileOf(old.fileName), oldCopy)
     await t.app.backup.setPassword('new-password-2', actor(t).userId)
+    // made in the same second (frozen test clock): must not overwrite the older file
     const fresh = await t.app.backup.create('MANUAL', null)
+    expect(fresh.fileName).not.toBe(old.fileName)
 
-    const a = t.app.backup.inspectFile(oldCopy)
+    const a = await t.app.backup.inspectRecord(old.id)
     const b = await t.app.backup.inspectRecord(fresh.id)
     // Wrong password for each file is rejected before anything is touched.
     await expect(t.app.backup.restore(a.token, 'new-password-2', null)).rejects.toMatchObject({ code: 'BACKUP_PASSWORD' })
