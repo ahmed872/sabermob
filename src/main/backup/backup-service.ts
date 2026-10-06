@@ -165,7 +165,7 @@ export class BackupService {
    * key. Changing it needs the key on this PC (or the current password).
    */
   async setPassword(password: string, userId: string | null, currentPassword?: string): Promise<void> {
-    if (password.length < 6) throw new AppError('VALIDATION', 'Password too short')
+    if (password.length < 6) throw new AppError('VALIDATION', 'Password too short', { reason: 'backupPasswordShort' })
     const wrap = await this.#wrap()
     let key = this.#key
     if (wrap && !key) {
@@ -181,7 +181,7 @@ export class BackupService {
   /** Re-enables automatic backups on this PC after the local key was lost. */
   async unlock(password: string, userId: string | null): Promise<void> {
     const wrap = await this.#wrap()
-    if (!wrap) throw new AppError('INVALID_STATE', 'No backup password set')
+    if (!wrap) throw new AppError('INVALID_STATE', 'No backup password set', { reason: 'noBackupPassword' })
     this.#storeLocal(unwrapKey(wrap, password))
     await this.d.audit.log({ userId, action: 'backup.unlocked' })
   }
@@ -362,7 +362,7 @@ export class BackupService {
    * the database gate for good: the caller must restart the app.
    */
   async restore(token: string, password: string, userId: string | null): Promise<void> {
-    if (this.#restoring) throw new AppError('INVALID_STATE')
+    if (this.#restoring) throw new AppError('INVALID_STATE', 'Restore in progress', { reason: 'restoreRunning' })
     const file = this.#picked.get(token)
     if (!file) throw new AppError('NOT_FOUND')
     const { header } = readHeader(file)

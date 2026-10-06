@@ -85,6 +85,9 @@ export class ApiRouter {
         const parsed = opts.input.safeParse(rawInput ?? {})
         if (!parsed.success) {
           throw new AppError('VALIDATION', 'Invalid input', {
+            reason: 'field',
+            // last named part of the first bad field (e.g. "lines.0.unitPrice" → "unitPrice"), for the message
+            field: [...(parsed.error.issues[0]?.path ?? [])].reverse().find((p) => typeof p === 'string') ?? null,
             issues: parsed.error.issues.slice(0, 5).map((i) => ({ path: i.path.join('.'), message: i.message }))
           })
         }

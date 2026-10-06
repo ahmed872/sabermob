@@ -20,6 +20,17 @@ export function errorMessage(err: unknown): string {
     const params = { ...(err.details ?? {}) } as Record<string, unknown>
     if (typeof params.permission === 'string') params.permission = i18n.t(`permissions.${params.permission}`)
     if (err.code === 'INSUFFICIENT_CASH' && typeof params.available === 'number') params.available = fmtMoney(params.available)
+    // "Check your data" says nothing at the counter: say what is wrong and where.
+    if ((err.code === 'VALIDATION' || err.code === 'INVALID_STATE') && typeof params.reason === 'string') {
+      if (typeof params.balance === 'number') params.balance = fmtMoney(params.balance)
+      if (params.reason === 'field' || params.reason === 'importColumn') {
+        const label = typeof params.field === 'string' ? `errors.fields.${params.field}` : ''
+        if (params.reason === 'field' && !(label && i18n.exists(label))) return i18n.t('errors.reasons.fieldUnknown')
+        params.field = label && i18n.exists(label) ? i18n.t(label) : params.field
+      }
+      const reasonKey = `errors.reasons.${params.reason}`
+      if (i18n.exists(reasonKey)) return i18n.t(reasonKey, params)
+    }
     return i18n.exists(key) ? i18n.t(key, params) : i18n.t('errors.INTERNAL')
   }
   return i18n.t('errors.INTERNAL')

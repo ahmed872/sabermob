@@ -125,8 +125,8 @@ export class BootstrapService {
 
   /** First-launch setup: store info, preferences and the owner account. */
   async completeOnboarding(input: OnboardingInput): Promise<void> {
-    if (!(await this.needsOnboarding())) throw new AppError('INVALID_STATE', 'Already set up')
-    if (!validatePasswordStrength(input.owner.password)) throw new AppError('VALIDATION', 'Weak password', { field: 'password' })
+    if (!(await this.needsOnboarding())) throw new AppError('INVALID_STATE', 'Already set up', { reason: 'alreadySetUp' })
+    if (!validatePasswordStrength(input.owner.password)) throw new AppError('VALIDATION', 'Weak password', { reason: 'weakPassword', field: 'password' })
     const ownerRole = await this.db.role.findUniqueOrThrow({ where: { systemKey: 'OWNER' } })
     const passwordHash = await hashSecret(input.owner.password)
     const pinHash = input.owner.pin ? await hashSecret(input.owner.pin) : null

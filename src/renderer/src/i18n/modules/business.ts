@@ -18,7 +18,7 @@ export const business = {
       paidNow: 'Paid now', receive: 'Receive goods', received: 'Received', damaged: 'Damaged', ordered: 'Ordered', outstanding: 'Outstanding', cancelPurchase: 'Cancel order',
       returnToSupplier: 'Return to supplier', returnDone: 'Goods returned to supplier', statuses: { DRAFT: 'Draft', ORDERED: 'Ordered', PARTIAL: 'Partly received', RECEIVED: 'Received', CANCELLED: 'Cancelled' },
       ledgerTypes: { OPENING: 'Opening balance', PURCHASE: 'Purchase', PAYMENT: 'Payment', RETURN: 'Returned goods', ADJUSTMENT: 'Adjustment', PAYMENT_VOID: 'Payment cancelled' },
-      voidPayment: 'Cancel payment', noSuppliers: 'No suppliers yet', addItems: 'Add products', purchaseSaved: 'Purchase saved', imeis: 'IMEIs ({{count}})', imeisHint: 'One per line',
+      voidPayment: 'Cancel payment', noSuppliers: 'No suppliers yet', addItems: 'Add products', purchaseSaved: 'Purchase saved', imeis: 'IMEIs ({{count}})', imeisHint: 'optional, one per line',
       direction: { OUT: 'Paid to supplier', IN: 'Received from supplier' }, valueReceived: 'Value received'
     },
     repairs: {
@@ -58,7 +58,7 @@ export const business = {
       paidNow: 'المدفوع الآن', receive: 'استلام بضاعة', received: 'المستلم', damaged: 'تالف', ordered: 'المطلوب', outstanding: 'المتبقي', cancelPurchase: 'إلغاء الطلبية',
       returnToSupplier: 'مرتجع للمورد', returnDone: 'تم إرجاع البضاعة للمورد', statuses: { DRAFT: 'مسودة', ORDERED: 'مطلوبة', PARTIAL: 'استلام جزئي', RECEIVED: 'مستلمة', CANCELLED: 'ملغاة' },
       ledgerTypes: { OPENING: 'رصيد سابق', PURCHASE: 'مشتريات', PAYMENT: 'دفعة', RETURN: 'مرتجع بضاعة', ADJUSTMENT: 'تسوية', PAYMENT_VOID: 'إلغاء دفعة' },
-      voidPayment: 'إلغاء الدفعة', noSuppliers: 'لا يوجد موردين بعد', addItems: 'إضافة أصناف', purchaseSaved: 'تم حفظ فاتورة الشراء', imeis: 'أرقام IMEI ({{count}})', imeisHint: 'رقم في كل سطر',
+      voidPayment: 'إلغاء الدفعة', noSuppliers: 'لا يوجد موردين بعد', addItems: 'إضافة أصناف', purchaseSaved: 'تم حفظ فاتورة الشراء', imeis: 'أرقام IMEI ({{count}})', imeisHint: 'اختياري — رقم في كل سطر (لو مش معاك سيبها فاضية)',
       direction: { OUT: 'مدفوع للمورد', IN: 'مستلم من المورد' }, valueReceived: 'قيمة المستلم'
     },
     repairs: {

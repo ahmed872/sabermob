@@ -92,7 +92,7 @@ export class SalesService {
       for (const line of input.lines) {
         if (!line.variantId) {
           const name = line.name?.trim()
-          if (!name) throw new AppError('VALIDATION', 'Custom item needs a name')
+          if (!name) throw new AppError('VALIDATION', 'Custom item needs a name', { reason: 'customName' })
           prepared.push({
             input: line,
             variantId: null,
@@ -167,13 +167,13 @@ export class SalesService {
       // ── Payments ──
       let redeemValue = 0
       if (input.redeemPoints && input.redeemPoints > 0) {
-        if (!loyalty.enabled || !customer) throw new AppError('VALIDATION', 'Loyalty points need a customer')
-        if (input.redeemPoints > customer.loyaltyPoints) throw new AppError('VALIDATION', 'Not enough points')
-        if (input.redeemPoints < loyalty.minRedeemPoints) throw new AppError('VALIDATION', 'Below minimum points to redeem', { min: loyalty.minRedeemPoints })
+        if (!loyalty.enabled || !customer) throw new AppError('VALIDATION', 'Loyalty points need a customer', { reason: 'pointsNeedCustomer' })
+        if (input.redeemPoints > customer.loyaltyPoints) throw new AppError('VALIDATION', 'Not enough points', { reason: 'notEnoughPoints' })
+        if (input.redeemPoints < loyalty.minRedeemPoints) throw new AppError('VALIDATION', 'Below minimum points to redeem', { reason: 'pointsBelowMin', min: loyalty.minRedeemPoints })
         redeemValue = Math.min(input.redeemPoints * loyalty.pointValue, priced.total)
       }
       const enabled = new Set(['CASH', ...pos.enabledPaymentMethods])
-      for (const p of input.payments) if (!enabled.has(p.method)) throw new AppError('VALIDATION', 'Payment method disabled', { method: p.method })
+      for (const p of input.payments) if (!enabled.has(p.method)) throw new AppError('VALIDATION', 'Payment method disabled', { reason: 'paymentMethodDisabled', method: p.method })
       const dueAfterPoints = priced.total - redeemValue
       const settled = settlePayments(dueAfterPoints, input.payments)
       const nonCash = input.payments.filter((p) => p.method !== 'CASH').reduce((a, p) => a + p.amount, 0)
@@ -231,7 +231,7 @@ export class SalesService {
           serial = p.input.serial?.trim() || null
           const v = await tx.productVariant.findUniqueOrThrow({ where: { id: p.variantId }, select: { stockQty: true } })
           unregistered = v.stockQty - (await tx.serialItem.count({ where: { variantId: p.variantId, status: 'IN_STOCK' } }))
-          if (serial && p.input.qty !== 1) throw new AppError('VALIDATION', 'One line per IMEI', { name: p.name })
+          if (serial && p.input.qty !== 1) throw new AppError('VALIDATION', 'One line per IMEI', { reason: 'oneLinePerImei', name: p.name })
           if (!serial && unregistered < p.input.qty) throw new AppError('SERIAL_REQUIRED', 'Select the IMEI/serial of the unit sold', { name: p.name })
         }
         const item = await tx.saleItem.create({
@@ -361,7 +361,7 @@ export class SalesService {
     await this.db.$transaction(async (tx) => {
       const sale = await tx.sale.findUnique({ where: { id: input.saleId }, include: { items: true, refunds: { include: { items: true } } } })
       if (!sale) throw new AppError('NOT_FOUND')
-      if (sale.status === 'VOIDED' || sale.status === 'REFUNDED') throw new AppError('INVALID_STATE', 'Sale already fully returned')
+      if (sale.status === 'VOIDED' || sale.status === 'REFUNDED') throw new AppError('INVALID_STATE', 'Sale already fully returned', { reason: 'saleFullyReturned' })
       const approvedById = this.auth.authorize(actor, needsApproval ? 'refund_sale' : 'create_sale', input.overrideToken)
       if (input.method === 'CREDIT' && !sale.customerId) throw new AppError('CREDIT_REQUIRES_CUSTOMER')
       const shift = await this.shifts.currentShift(tx)
@@ -389,7 +389,7 @@ export class SalesService {
       const item = sale.items.find((i) => i.id === req.saleItemId)
       if (!item) throw new AppError('NOT_FOUND', 'Sale item not found')
       const remainingQty = item.qty - item.refundedQty
-      if (req.qty > remainingQty) throw new AppError('VALIDATION', 'Return quantity exceeds what was sold', { name: item.name, max: remainingQty })
+      if (req.qty > remainingQty) throw new AppError('VALIDATION', 'Return quantity exceeds what was sold', { reason: 'returnTooMany', name: item.name, max: remainingQty })
       // The last returned unit takes the rounding remainder so refunds never exceed the line total.
       const already = refundedAmountByItem.get(item.id) ?? 0
       const amount = req.qty === remainingQty ? item.total - already : divRound(item.total * req.qty, item.qty)
@@ -465,7 +465,7 @@ export class SalesService {
     await this.db.$transaction(async (tx) => {
       const sale = await tx.sale.findUnique({ where: { id: input.saleId }, include: { items: true, refunds: { include: { items: true } } } })
       if (!sale) throw new AppError('NOT_FOUND')
-      if (sale.status !== 'COMPLETED') throw new AppError('INVALID_STATE', 'Only sales without returns can be voided')
+      if (sale.status !== 'COMPLETED') throw new AppError('INVALID_STATE', 'Only sales without returns can be voided', { reason: 'voidOnlyCompleted' })
       const approvedById = this.auth.authorize(actor, 'cancel_sale', input.overrideToken)
       const shift = await this.shifts.currentShift(tx)
       await this.#refundItems(

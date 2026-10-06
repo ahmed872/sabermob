@@ -144,7 +144,7 @@ export class CustomerService {
 
   async delete(id: string, actor: Actor): Promise<void> {
     const balance = await this.balance(id)
-    if (balance !== 0) throw new AppError('INVALID_STATE', 'Customer has an outstanding balance', { balance })
+    if (balance !== 0) throw new AppError('INVALID_STATE', 'Customer has an outstanding balance', { reason: 'customerBalance', balance })
     await this.db.customer.update({ where: { id }, data: { deletedAt: new Date() } })
     await this.audit.log({ userId: actor.userId, action: 'customer.deleted', entity: 'Customer', entityId: id })
   }
@@ -178,7 +178,7 @@ export class CustomerService {
       const customer = await tx.customer.findUnique({ where: { id: input.customerId } })
       if (!customer || customer.deletedAt) throw new AppError('NOT_FOUND')
       const balance = await this.balance(input.customerId, tx)
-      if (input.amount > balance) throw new AppError('VALIDATION', 'Amount exceeds the debt', { balance })
+      if (input.amount > balance) throw new AppError('VALIDATION', 'Amount exceeds the debt', { reason: 'moreThanDebt', balance })
       const shift = await this.shifts().currentShift(tx)
       const payment = await tx.payment.create({
         data: { kind: 'DEBT_COLLECTION', method: input.method, amount: input.amount, customerId: input.customerId, shiftId: shift?.id ?? null, userId: actor.userId }
@@ -205,7 +205,7 @@ export class CustomerService {
   async adjustPoints(customerId: string, points: number, note: string, actor: Actor): Promise<{ points: number }> {
     return this.db.$transaction(async (tx) => {
       const c = await tx.customer.findUniqueOrThrow({ where: { id: customerId } })
-      if (c.loyaltyPoints + points < 0) throw new AppError('VALIDATION', 'Not enough points')
+      if (c.loyaltyPoints + points < 0) throw new AppError('VALIDATION', 'Not enough points', { reason: 'notEnoughPoints' })
       await tx.customer.update({ where: { id: customerId }, data: { loyaltyPoints: { increment: points } } })
       await tx.loyaltyTransaction.create({ data: { customerId, points, reason: 'ADJUST', refId: null } })
       await this.audit.log({ userId: actor.userId, action: 'customer.points_adjusted', entity: 'Customer', entityId: customerId, metadata: { points, note } }, tx)

@@ -70,7 +70,7 @@ export class RepairService {
 
   async create(input: RepairCreateInput, actor: Actor): Promise<RepairDto> {
     const cfg = this.settings.get('repairs')
-    if (cfg.requireSignature && !input.signature) throw new AppError('VALIDATION', 'Customer signature required', { field: 'signature' })
+    if (cfg.requireSignature && !input.signature) throw new AppError('VALIDATION', 'Customer signature required', { reason: 'signatureRequired', field: 'signature' })
     const phone = normalizePhone(input.customerPhone) ?? input.customerPhone.trim()
     // Save files before the transaction; removed again if it fails.
     const savedFiles: string[] = []
@@ -153,7 +153,7 @@ export class RepairService {
     const existing = await this.db.repair.findUnique({ where: { id: input.id }, include: { status: true } })
     if (!existing || existing.deletedAt) throw new AppError('NOT_FOUND')
     if (existing.status.key === 'DELIVERED' && (input.finalPrice !== undefined || input.laborPrice !== undefined)) {
-      throw new AppError('INVALID_STATE', 'Delivered repairs cannot be repriced')
+      throw new AppError('INVALID_STATE', 'Delivered repairs cannot be repriced', { reason: 'repairDelivered' })
     }
     const data: Record<string, unknown> = {}
     for (const k of ['deviceBrand', 'deviceModel', 'imei', 'serialNumber', 'deviceColor', 'deviceCondition', 'complaint', 'diagnosis', 'notes', 'technicianId', 'estimatedPrice', 'laborPrice', 'finalPrice', 'warrantyDays'] as const) {
@@ -191,7 +191,7 @@ export class RepairService {
     await this.db.$transaction(async (tx) => {
       const repair = await tx.repair.findUnique({ where: { id: input.repairId }, include: { status: true } })
       if (!repair || repair.deletedAt) throw new AppError('NOT_FOUND')
-      if (repair.status.isFinal) throw new AppError('INVALID_STATE', 'Repair is closed')
+      if (repair.status.isFinal) throw new AppError('INVALID_STATE', 'Repair is closed', { reason: 'repairClosed' })
       let name = input.name?.trim() ?? ''
       let unitCost = input.unitCost ?? 0
       let unitPrice = input.unitPrice ?? 0
@@ -213,7 +213,7 @@ export class RepairService {
           allowNegative: this.settings.get('pos').allowNegativeStock
         })
       } else if (!name) {
-        throw new AppError('VALIDATION', 'Part name required')
+        throw new AppError('VALIDATION', 'Part name required', { reason: 'partName' })
       }
       const part = await tx.repairPart.create({ data: { repairId: repair.id, variantId: input.variantId ?? null, name, qty: input.qty, unitCost, unitPrice, userId: actor.userId } })
       await this.audit.log({ userId: actor.userId, action: 'repair.part_added', entity: 'Repair', entityId: repair.id, metadata: { part: name, qty: input.qty, partId: part.id } }, tx)
@@ -225,7 +225,7 @@ export class RepairService {
     const repairId = await this.db.$transaction(async (tx) => {
       const part = await tx.repairPart.findUnique({ where: { id: partId }, include: { repair: { include: { status: true } } } })
       if (!part || part.returnedAt) throw new AppError('NOT_FOUND')
-      if (part.repair.status.key === 'DELIVERED') throw new AppError('INVALID_STATE', 'Repair already delivered')
+      if (part.repair.status.key === 'DELIVERED') throw new AppError('INVALID_STATE', 'Repair already delivered', { reason: 'repairDelivered' })
       await this.#returnPart(tx, part, restock, actor)
       return part.repairId
     })
@@ -267,12 +267,12 @@ export class RepairService {
         if (!r || r.deletedAt) throw new AppError('NOT_FOUND')
         const to = await tx.repairStatus.findUnique({ where: { id: input.statusId } })
         if (!to || !to.isActive) throw new AppError('NOT_FOUND', 'Status not found')
-        if (r.status.isFinal && r.status.key !== 'UNCLAIMED') throw new AppError('INVALID_STATE', 'Repair is already closed')
+        if (r.status.isFinal && r.status.key !== 'UNCLAIMED') throw new AppError('INVALID_STATE', 'Repair is already closed', { reason: 'repairClosed' })
         const data: Record<string, unknown> = { statusId: to.id }
         const shift = await this.shifts.currentShift(tx)
 
         if (to.key === 'DELIVERED') {
-          if (this.settings.get('repairs').requireSignature && !savedSig) throw new AppError('VALIDATION', 'Customer signature required', { field: 'signature' })
+          if (this.settings.get('repairs').requireSignature && !savedSig) throw new AppError('VALIDATION', 'Customer signature required', { reason: 'signatureRequired', field: 'signature' })
           const price = this.#priceOf(r, r.parts)
           const due = Math.max(0, price - r.paidTotal)
           const settled = settlePayments(due, input.payments ?? [])
@@ -345,7 +345,7 @@ export class RepairService {
   async delete(id: string, actor: Actor): Promise<void> {
     const r = await this.db.repair.findUnique({ where: { id }, include: { parts: { where: { returnedAt: null } } } })
     if (!r || r.deletedAt) throw new AppError('NOT_FOUND')
-    if (r.paidTotal !== 0 || r.parts.length > 0) throw new AppError('INVALID_STATE', 'Cancel the repair instead (it has payments or parts)')
+    if (r.paidTotal !== 0 || r.parts.length > 0) throw new AppError('INVALID_STATE', 'Cancel the repair instead (it has payments or parts)', { reason: 'repairHasMoney' })
     await this.db.repair.update({ where: { id }, data: { deletedAt: this.now(), deletedById: actor.userId } })
     await this.audit.log({ userId: actor.userId, action: 'repair.deleted', entity: 'Repair', entityId: id, metadata: { number: r.number } })
   }

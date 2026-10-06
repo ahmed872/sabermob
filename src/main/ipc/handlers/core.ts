@@ -145,7 +145,7 @@ export function registerCoreHandlers(r: ApiRouter, deps: CoreHandlerDeps): void 
     const schema = settingsSchemas[group] as unknown as z.ZodObject
     const parsed = schema.partial().safeParse(input.values)
     if (!parsed.success) {
-      throw new AppError('VALIDATION', 'Invalid settings', { issues: parsed.error.issues.slice(0, 5).map((i) => i.path.join('.')) })
+      throw new AppError('VALIDATION', 'Invalid settings', { reason: 'invalidSettings', issues: parsed.error.issues.slice(0, 5).map((i) => i.path.join('.')) })
     }
     if (group === 'general' && 'onboardingComplete' in parsed.data) delete (parsed.data as Record<string, unknown>).onboardingComplete
     if (group === 'backup') {

@@ -5,5 +5,5 @@
     "lib": ["ES2023"],
     "types": ["node"]
   },
-  "include": ["electron.vite.config.ts", "vitest.config.ts", "prisma.config.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*", "tests/**/*"]
+  "include": ["electron.vite.config.ts", "vitest.config.ts", "prisma.config.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*", "src/renderer/src/i18n/modules/errors.ts", "tests/**/*"]
 }

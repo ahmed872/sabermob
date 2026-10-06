@@ -55,7 +55,7 @@ export class UserService {
     const others = await this.db.user.count({
       where: { roleId: ownerRole.id, isActive: true, deletedAt: null, NOT: { id: excludingUserId } }
     })
-    if (others === 0) throw new AppError('INVALID_STATE', 'At least one active owner is required')
+    if (others === 0) throw new AppError('INVALID_STATE', 'At least one active owner is required', { reason: 'ownerRequired' })
   }
 
   async create(input: UserCreateInput, actor: Actor): Promise<UserDto> {
@@ -85,7 +85,7 @@ export class UserService {
     const existing = await this.db.user.findUnique({ where: { id: input.id } })
     if (!existing || existing.deletedAt) throw new AppError('NOT_FOUND')
     await this.#assertOwnerRemains(input.id, input.roleId, input.isActive === false)
-    if (input.id === actor.userId && input.isActive === false) throw new AppError('INVALID_STATE', 'You cannot deactivate yourself')
+    if (input.id === actor.userId && input.isActive === false) throw new AppError('INVALID_STATE', 'You cannot deactivate yourself', { reason: 'deactivateSelf' })
     const data: Record<string, unknown> = {}
     if (input.fullName !== undefined) data.fullName = input.fullName.trim()
     if (input.phone !== undefined) data.phone = input.phone
@@ -138,7 +138,7 @@ export class UserService {
       if (roleId) {
         const role = await tx.role.findUnique({ where: { id: roleId }, include: { permissions: true } })
         if (!role || role.deletedAt) throw new AppError('NOT_FOUND')
-        if (role.systemKey === 'OWNER') throw new AppError('INVALID_STATE', 'The owner role cannot be changed')
+        if (role.systemKey === 'OWNER') throw new AppError('INVALID_STATE', 'The owner role cannot be changed', { reason: 'ownerRoleLocked' })
         await tx.role.update({ where: { id: roleId }, data: { name: input.name, description: input.description ?? null, maxDiscountBp: input.maxDiscountBp } })
         await tx.rolePermission.deleteMany({ where: { roleId } })
         const before = role.permissions.map((p) => p.permissionKey)
@@ -170,7 +170,7 @@ export class UserService {
   async deleteRole(id: string, actor: Actor): Promise<void> {
     const role = await this.db.role.findUnique({ where: { id }, include: { _count: { select: { users: { where: { deletedAt: null } } } } } })
     if (!role || role.deletedAt) throw new AppError('NOT_FOUND')
-    if (role.systemKey) throw new AppError('INVALID_STATE', 'Built-in roles cannot be deleted')
+    if (role.systemKey) throw new AppError('INVALID_STATE', 'Built-in roles cannot be deleted', { reason: 'builtinRole' })
     if (role._count.users > 0) throw new AppError('CONFLICT', 'Role has users', { count: role._count.users })
     await this.db.role.update({ where: { id }, data: { deletedAt: new Date() } })
     await this.audit.log({ userId: actor.userId, action: 'role.deleted', entity: 'Role', entityId: id, metadata: { name: role.name } })

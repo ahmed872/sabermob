@@ -190,7 +190,7 @@ export class CatalogService {
   }
 
   async saveCategory(input: CategorySaveInput, actor: Actor): Promise<CategoryDto> {
-    if (input.id && input.parentId === input.id) throw new AppError('VALIDATION', 'Category cannot be its own parent')
+    if (input.id && input.parentId === input.id) throw new AppError('VALIDATION', 'Category cannot be its own parent', { reason: 'categoryParent' })
     const data = {
       name: input.name.trim(),
       kind: input.kind ?? 'ACCESSORY',
@@ -295,7 +295,7 @@ export class CatalogService {
 
   #variantData(v: VariantInput, trackStock: boolean) {
     const defaultMin = this.settings.get('inventory').defaultMinStock
-    if (v.minPrice != null && v.minPrice > v.sellPrice) throw new AppError('VALIDATION', 'Minimum price above selling price', { field: 'minPrice' })
+    if (v.minPrice != null && v.minPrice > v.sellPrice) throw new AppError('VALIDATION', 'Minimum price above selling price', { reason: 'minPriceAboveSell', field: 'minPrice' })
     return {
       name: v.name ?? null,
       sku: v.sku ?? null,
@@ -330,10 +330,10 @@ export class CatalogService {
     let opening = v.openingStock ?? 0
     if (product.trackSerials) {
       if (serials.length > 0 && opening > 0 && opening !== serials.length) {
-        throw new AppError('VALIDATION', 'Opening quantity must match the number of IMEI/serials', { field: 'serials' })
+        throw new AppError('VALIDATION', 'Opening quantity must match the number of IMEI/serials', { reason: 'serialsCount', field: 'serials' })
       }
       opening = serials.length || opening
-      if (opening > 0 && serials.length === 0) throw new AppError('VALIDATION', 'Enter the IMEI/serial for each unit', { field: 'serials' })
+      if (opening > 0 && serials.length === 0) throw new AppError('VALIDATION', 'Enter the IMEI/serial for each unit', { reason: 'serialsMissing', field: 'serials' })
       for (const serial of serials) {
         await tx.serialItem.create({ data: { variantId: created.id, serial, costPrice: v.costPrice ?? 0 } })
       }
@@ -359,7 +359,7 @@ export class CatalogService {
       const product = await tx.product.create({ data })
       const ids: string[] = []
       const active = input.variants.filter((v) => !v.remove)
-      if (active.length === 0) throw new AppError('VALIDATION', 'At least one variant is required')
+      if (active.length === 0) throw new AppError('VALIDATION', 'At least one variant is required', { reason: 'variantRequired' })
       for (const [i, v] of active.entries()) {
         ids.push(await this.#createVariant(tx, product.id, v, data, i === 0, actor))
       }
@@ -378,9 +378,8 @@ export class CatalogService {
     await this.db.$transaction(async (tx) => {
       const existing = await tx.product.findUnique({ where: { id: input.id }, include: { variants: { where: { deletedAt: null }, include: { barcodes: true } } } })
       if (!existing || existing.deletedAt) throw new AppError('NOT_FOUND', 'Product not found')
-      if (existing.trackSerials && !data.trackSerials && existing.variants.some((v) => v.stockQty > 0)) {
-        throw new AppError('INVALID_STATE', 'Cannot disable IMEI tracking while units are in stock')
-      }
+      // Switching IMEI tracking off with phones in stock is fine: they sell by quantity from now on
+      // (registered IMEIs stay on record and count again if tracking is switched back on).
       await tx.product.update({ where: { id: input.id }, data })
       const touched: string[] = []
       for (const v of input.variants) {
@@ -392,7 +391,7 @@ export class CatalogService {
         const current = existing.variants.find((x) => x.id === v.id)
         if (!current) throw new AppError('NOT_FOUND', 'Variant not found', { variantId: v.id })
         if (v.remove) {
-          if (current.stockQty !== 0) throw new AppError('INVALID_STATE', 'Variant still has stock', { variantId: v.id, stock: current.stockQty })
+          if (current.stockQty !== 0) throw new AppError('INVALID_STATE', 'Variant still has stock', { reason: 'variantHasStock', variantId: v.id, stock: current.stockQty })
           await tx.productVariant.update({ where: { id: v.id }, data: { deletedAt: new Date(), isDefault: false } })
           await tx.barcode.deleteMany({ where: { variantId: v.id } })
           continue
@@ -421,7 +420,7 @@ export class CatalogService {
         touched.push(v.id)
       }
       const remaining = await tx.productVariant.findMany({ where: { productId: input.id, deletedAt: null }, orderBy: { createdAt: 'asc' } })
-      if (remaining.length === 0) throw new AppError('VALIDATION', 'At least one variant is required')
+      if (remaining.length === 0) throw new AppError('VALIDATION', 'At least one variant is required', { reason: 'variantRequired' })
       if (!remaining.some((r) => r.isDefault)) await tx.productVariant.update({ where: { id: remaining[0]!.id }, data: { isDefault: true } })
       await this.#reindexVariants(tx, remaining.map((r) => r.id))
       await this.audit.log({ userId: actor.userId, action: 'product.updated', entity: 'Product', entityId: input.id, metadata: { name: data.name } }, tx)
@@ -434,7 +433,7 @@ export class CatalogService {
       const p = await tx.product.findUnique({ where: { id }, include: { variants: { where: { deletedAt: null } } } })
       if (!p || p.deletedAt) throw new AppError('NOT_FOUND')
       const stocked = p.variants.filter((v) => p.trackStock && v.stockQty > 0)
-      if (stocked.length > 0) throw new AppError('INVALID_STATE', 'Product still has stock', { stock: stocked.reduce((a, v) => a + v.stockQty, 0) })
+      if (stocked.length > 0) throw new AppError('INVALID_STATE', 'Product still has stock', { reason: 'productHasStock', stock: stocked.reduce((a, v) => a + v.stockQty, 0) })
       const now = new Date()
       await tx.product.update({ where: { id }, data: { deletedAt: now, isActive: false } })
       await tx.productVariant.updateMany({ where: { productId: id, deletedAt: null }, data: { deletedAt: now } })

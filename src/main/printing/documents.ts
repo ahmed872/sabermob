@@ -71,7 +71,7 @@ export async function buildDocument(ctx: AppContext, req: PrintRequest, actor: A
         const qr = qrOn && qrCfg.onLabels ? await ctx.qr.dataUrl('P', v.variantId) : null
         for (let i = 0; i < Math.min(it.qty, 500); i++) labels.push({ name: v.name, price: v.sellPrice, barcode: v.barcode ?? v.sku, qr })
       }
-      if (labels.length === 0) throw new AppError('VALIDATION', 'Nothing to print')
+      if (labels.length === 0) throw new AppError('VALIDATION', 'Nothing to print', { reason: 'nothingToPrint' })
       return { type: 'labels', paper: 'label', store, widthMm: p.labelWidthMm, heightMm: p.labelHeightMm, labels }
     }
     case 'test':

@@ -118,7 +118,7 @@ function ReceiveForm({ po, onDone }: { po: PurchaseDto; onDone: () => void }) {
                 dir="ltr"
                 rows={2}
                 className="mt-2 font-mono"
-                placeholder={t('suppliers.imeis', { count: good[l.id] })}
+                placeholder={`${t('suppliers.imeis', { count: good[l.id] })} — ${t('suppliers.imeisHint')}`}
                 value={serials[l.id] ?? ''}
                 onChange={(e) => setSerials({ ...serials, [l.id]: e.target.value })}
               />

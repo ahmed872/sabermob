@@ -46,7 +46,8 @@ export default function PurchaseEditorPage() {
       return [...ls, { item, qty: 1, unitCost: item.costPrice ?? 0, serials: '' }]
     })
   const serialCount = (l: Line) => l.serials.split(/\r?\n/).filter((s) => s.trim()).length
-  const serialsOk = !receiveNow || lines.every((l) => !l.item.trackSerials || serialCount(l) === l.qty)
+  // IMEIs are optional (phones without one sell by quantity); just never more than the quantity
+  const serialsOk = !receiveNow || lines.every((l) => !l.item.trackSerials || serialCount(l) <= l.qty)
 
   return (
     <div className="flex h-full flex-col">
@@ -128,7 +129,7 @@ export default function PurchaseEditorPage() {
                         className="mt-2 font-mono"
                         placeholder={`${t('suppliers.imeis', { count: l.qty })} — ${t('suppliers.imeisHint')}`}
                         value={l.serials}
-                        aria-invalid={serialCount(l) !== l.qty || undefined}
+                        aria-invalid={serialCount(l) > l.qty || undefined}
                         onChange={(e) => setLines((ls) => ls.map((x, k) => (k === i ? { ...x, serials: e.target.value } : x)))}
                       />
                     ) : null}

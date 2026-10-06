@@ -326,7 +326,7 @@ export class AuthService {
     const a = this.#actor
     if (!a) throw new AppError('UNAUTHENTICATED')
     await this.#verify(a.userId, null, currentPassword, 'PASSWORD')
-    if (!validatePasswordStrength(newPassword)) throw new AppError('VALIDATION', 'Weak password', { field: 'password' })
+    if (!validatePasswordStrength(newPassword)) throw new AppError('VALIDATION', 'Weak password', { reason: 'weakPassword', field: 'password' })
     await this.db.user.update({ where: { id: a.userId }, data: { passwordHash: await hashSecret(newPassword) } })
     await this.audit.log({ userId: a.userId, action: 'user.password_changed', entity: 'User', entityId: a.userId })
   }
@@ -335,7 +335,7 @@ export class AuthService {
     const a = this.#actor
     if (!a) throw new AppError('UNAUTHENTICATED')
     await this.#verify(a.userId, null, currentPassword, 'PASSWORD')
-    if (pin !== null && !validatePin(pin)) throw new AppError('VALIDATION', 'PIN must be 4-8 digits', { field: 'pin' })
+    if (pin !== null && !validatePin(pin)) throw new AppError('VALIDATION', 'PIN must be 4-8 digits', { reason: 'pinDigits', field: 'pin' })
     await this.db.user.update({ where: { id: a.userId }, data: { pinHash: pin ? await hashSecret(pin) : null } })
     await this.audit.log({ userId: a.userId, action: 'user.pin_changed', entity: 'User', entityId: a.userId })
   }

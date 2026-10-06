@@ -159,7 +159,7 @@ export class ImportService {
 
   #rows(f: ParsedFile, entity: ImportEntity, mapping: ImportMapping): Row[] {
     for (const field of IMPORT_FIELDS[entity]) {
-      if (field.required && (mapping[field.key] == null || mapping[field.key]! >= f.headers.length)) throw new AppError('VALIDATION', `Column for ${field.key} is required`, { field: field.key })
+      if (field.required && (mapping[field.key] == null || mapping[field.key]! >= f.headers.length)) throw new AppError('VALIDATION', `Column for ${field.key} is required`, { reason: 'importColumn', field: field.key })
     }
     return f.rows.map((r) => {
       const out: Row = {}

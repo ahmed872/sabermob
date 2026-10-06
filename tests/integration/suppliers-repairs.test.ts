@@ -82,9 +82,16 @@ describe('suppliers & purchases', () => {
   it('receives phones with IMEIs', async () => {
     const phone = await product('Galaxy A15', 600000, 0, true)
     const s = await t.app.suppliers.save({ name: 'Phones Dist' }, actor(t))
-    await expect(t.app.suppliers.createPurchase({ supplierId: s.id, items: [{ variantId: phone, qty: 2, unitCost: 600000 }] }, actor(t))).rejects.toMatchObject({ code: 'VALIDATION' })
+    // more IMEIs than phones is a typing mistake
+    await expect(
+      t.app.suppliers.createPurchase({ supplierId: s.id, items: [{ variantId: phone, qty: 1, unitCost: 600000 }], serials: { [phone]: ['351111111111110', '351111111111119'] } }, actor(t))
+    ).rejects.toMatchObject({ code: 'VALIDATION', details: { reason: 'receiveSerials' } })
     await t.app.suppliers.createPurchase({ supplierId: s.id, items: [{ variantId: phone, qty: 2, unitCost: 600000 }], serials: { [phone]: ['351111111111111', '351111111111112'] } }, actor(t))
     expect(await stock(phone)).toBe(2)
+    expect(await t.app.db.serialItem.count({ where: { variantId: phone, status: 'IN_STOCK' } })).toBe(2)
+    // phones can also arrive without IMEIs (the shop does not have them): they sell by quantity
+    await t.app.suppliers.createPurchase({ supplierId: s.id, items: [{ variantId: phone, qty: 3, unitCost: 600000 }] }, actor(t))
+    expect(await stock(phone)).toBe(5)
     expect(await t.app.db.serialItem.count({ where: { variantId: phone, status: 'IN_STOCK' } })).toBe(2)
   })
 })

@@ -105,7 +105,7 @@ export class SupplierService {
 
   async delete(id: string, actor: Actor): Promise<void> {
     const bal = await this.balance(id)
-    if (bal !== 0) throw new AppError('INVALID_STATE', 'Supplier has an open balance', { balance: bal })
+    if (bal !== 0) throw new AppError('INVALID_STATE', 'Supplier has an open balance', { reason: 'supplierBalance', balance: bal })
     await this.db.supplier.update({ where: { id }, data: { deletedAt: new Date() } })
     await this.audit.log({ userId: actor.userId, action: 'supplier.deleted', entity: 'Supplier', entityId: id })
   }
@@ -181,7 +181,7 @@ export class SupplierService {
     await this.db.$transaction(async (tx) => {
       const p = await tx.supplierPayment.findUnique({ where: { id: paymentId } })
       if (!p) throw new AppError('NOT_FOUND')
-      if (p.voidedAt) throw new AppError('INVALID_STATE', 'Already voided')
+      if (p.voidedAt) throw new AppError('INVALID_STATE', 'Already voided', { reason: 'alreadyVoided' })
       await tx.supplierPayment.update({ where: { id: paymentId }, data: { voidedAt: new Date(), voidedById: actor.userId, voidReason: reason } })
       await tx.supplierLedger.create({
         data: {
@@ -279,7 +279,7 @@ export class SupplierService {
   async #receive(tx: Tx, input: PurchaseReceiveInput, actor: Actor): Promise<number> {
     const po = await tx.purchaseOrder.findUnique({ where: { id: input.purchaseOrderId }, include: { items: { include: { variant: { include: { product: true } } } } } })
     if (!po) throw new AppError('NOT_FOUND', 'Purchase not found')
-    if (po.status === 'CANCELLED' || po.status === 'RECEIVED') throw new AppError('INVALID_STATE', 'Purchase already closed')
+    if (po.status === 'CANCELLED' || po.status === 'RECEIVED') throw new AppError('INVALID_STATE', 'Purchase already closed', { reason: 'purchaseClosed' })
     const receipt = await tx.purchaseReceipt.create({ data: { purchaseOrderId: po.id, note: input.note ?? null, userId: actor.userId } })
     let value = 0
     for (const line of input.items) {
@@ -289,11 +289,12 @@ export class SupplierService {
       const damaged = line.qtyDamaged ?? 0
       if (good + damaged === 0) continue
       const outstanding = item.qtyOrdered - item.qtyReceived - item.qtyDamaged
-      if (good + damaged > outstanding) throw new AppError('VALIDATION', 'Received more than ordered', { name: item.variant.product.name, outstanding })
+      if (good + damaged > outstanding) throw new AppError('VALIDATION', 'Received more than ordered', { reason: 'receivedTooMany', name: item.variant.product.name, outstanding })
       const unitCost = line.unitCost ?? item.unitCost
       if (item.variant.product.trackSerials && good > 0) {
         const serials = (line.serials ?? []).map((s) => s.trim()).filter(Boolean)
-        if (serials.length !== good) throw new AppError('VALIDATION', 'Enter one IMEI/serial per unit received', { name: item.variant.product.name, expected: good })
+        // IMEIs are optional: units received without one sell by quantity (like stock counted by hand).
+        if (serials.length > good) throw new AppError('VALIDATION', 'More IMEIs than units received', { reason: 'receiveSerials', name: item.variant.product.name, expected: good })
         for (const serial of serials) await tx.serialItem.create({ data: { variantId: item.variantId, serial, costPrice: unitCost } })
       }
       if (good > 0) {
@@ -326,7 +327,7 @@ export class SupplierService {
     await this.db.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({ where: { id }, include: { items: true } })
       if (!po) throw new AppError('NOT_FOUND')
-      if (po.items.some((i) => i.qtyReceived > 0)) throw new AppError('INVALID_STATE', 'Goods already received; use a supplier return instead')
+      if (po.items.some((i) => i.qtyReceived > 0)) throw new AppError('INVALID_STATE', 'Goods already received; use a supplier return instead', { reason: 'purchaseReceived' })
       await tx.purchaseOrder.update({ where: { id }, data: { status: 'CANCELLED' } })
       await this.audit.log({ userId: actor.userId, action: 'purchase.cancelled', entity: 'PurchaseOrder', entityId: id, metadata: { number: po.number } }, tx)
     })
@@ -355,7 +356,7 @@ export class SupplierService {
         await applyStockChange(tx, { variantId: i.variantId, type: 'PURCHASE_RETURN', qty: -i.qty, unitCost: i.unitCost, refType: 'PurchaseReturn', refId: ret.id, reason: number, userId: actor.userId })
         for (const serial of i.serials ?? []) {
           const s = await tx.serialItem.updateMany({ where: { serial, variantId: i.variantId, status: { in: ['IN_STOCK', 'DEFECTIVE'] } }, data: { status: 'RETURNED_TO_SUPPLIER' } })
-          if (s.count === 0) throw new AppError('VALIDATION', 'IMEI not in stock', { serial })
+          if (s.count === 0) throw new AppError('VALIDATION', 'IMEI not in stock', { reason: 'imeiNotInStock', serial })
         }
         if (input.purchaseOrderId) {
           const item = await tx.purchaseItem.findFirst({ where: { purchaseOrderId: input.purchaseOrderId, variantId: i.variantId } })

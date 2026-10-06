@@ -206,7 +206,11 @@ export function PaymentDialog({ open, onOpenChange, total, onDone }: { open: boo
             <div className={cn('rounded-xl p-3', customer ? 'bg-warning-soft text-warning' : 'bg-danger-soft text-danger')}>
               <p className="text-sm font-bold">{customer ? t('pos.onCredit') : t('pos.remaining')}</p>
               <p className="text-2xl font-black tabular">{fmtMoney(settled.remaining)}</p>
-              {!customer ? <p className="mt-1 text-xs font-semibold">{t('pos.creditNeedsCustomer')}</p> : null}
+              {creditBlocked ? (
+                <p className="mt-1 text-xs font-semibold">{t('pos.creditDisabled')}</p>
+              ) : !customer ? (
+                <p className="mt-1 text-xs font-semibold">{t('pos.creditNeedsCustomer')}</p>
+              ) : null}
             </div>
           ) : null}
           {overpaidCard ? <p className="text-sm font-semibold text-danger">{t('errors.PAYMENT_MISMATCH')}</p> : null}

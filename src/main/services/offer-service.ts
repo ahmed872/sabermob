@@ -81,9 +81,9 @@ export class OfferService implements OfferResolver {
 
   async save(input: OfferSaveInput, actor: Actor): Promise<OfferDto> {
     const hasBenefit = input.discountBp != null || input.discountAmount != null || input.bundlePrice != null || input.type === 'BUY_X_GET_Y'
-    if (!hasBenefit) throw new AppError('VALIDATION', 'Offer needs a discount or bundle price', { field: 'discount' })
+    if (!hasBenefit) throw new AppError('VALIDATION', 'Offer needs a discount or bundle price', { reason: 'offerNoBenefit', field: 'discount' })
     const targets = input.targets ?? { productIds: [], categoryIds: [] }
-    if ((targets.productIds?.length ?? 0) + (targets.categoryIds?.length ?? 0) === 0) throw new AppError('VALIDATION', 'Choose the products the offer applies to', { field: 'targets' })
+    if ((targets.productIds?.length ?? 0) + (targets.categoryIds?.length ?? 0) === 0) throw new AppError('VALIDATION', 'Choose the products the offer applies to', { reason: 'offerNoTargets', field: 'targets' })
     const data = {
       name: input.name,
       description: input.description ?? null,

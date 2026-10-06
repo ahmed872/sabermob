@@ -29,7 +29,7 @@ export interface StockChange {
  * any other way.
  */
 export async function applyStockChange(tx: Tx, c: StockChange): Promise<{ balanceAfter: number; tracked: boolean }> {
-  if (!Number.isSafeInteger(c.qty)) throw new AppError('VALIDATION', 'Invalid quantity')
+  if (!Number.isSafeInteger(c.qty)) throw new AppError('VALIDATION', 'Invalid quantity', { reason: 'invalidQty' })
   const v = await tx.productVariant.findUnique({
     where: { id: c.variantId },
     select: { stockQty: true, costPrice: true, deletedAt: true, product: { select: { trackStock: true, name: true } } }
@@ -95,13 +95,13 @@ export class InventoryService {
         let movementType: StockMovementType
         switch (input.type) {
           case 'COUNT':
-            if (item.qty < 0) throw new AppError('VALIDATION', 'Counted quantity cannot be negative')
+            if (item.qty < 0) throw new AppError('VALIDATION', 'Counted quantity cannot be negative', { reason: 'countNegative' })
             delta = item.qty - v.stockQty
             movementType = 'ADJUSTMENT'
             break
           case 'DAMAGED':
           case 'LOST':
-            if (item.qty <= 0) throw new AppError('VALIDATION', 'Quantity must be positive')
+            if (item.qty <= 0) throw new AppError('VALIDATION', 'Quantity must be positive', { reason: 'qtyPositive' })
             delta = -item.qty
             movementType = input.type
             break

@@ -16,16 +16,16 @@ export class MediaService {
 
   saveDataUrl(folder: string, dataUrl: string): string {
     const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl)
-    if (!m) throw new AppError('VALIDATION', 'Unsupported image')
+    if (!m) throw new AppError('VALIDATION', 'Unsupported image', { reason: 'badImage' })
     const bytes = Buffer.from(m[2]!, 'base64')
-    if (bytes.length > MAX_BYTES) throw new AppError('VALIDATION', 'Image too large')
+    if (bytes.length > MAX_BYTES) throw new AppError('VALIDATION', 'Image too large', { reason: 'imageTooLarge' })
     // Verify the magic bytes match the declared type.
     const sig = bytes.subarray(0, 12).toString('hex')
     const ok =
       (m[1] === 'image/png' && sig.startsWith('89504e47')) ||
       (m[1] === 'image/jpeg' && sig.startsWith('ffd8ff')) ||
       (m[1] === 'image/webp' && sig.startsWith('52494646') && bytes.subarray(8, 12).toString() === 'WEBP')
-    if (!ok) throw new AppError('VALIDATION', 'Image content does not match its type')
+    if (!ok) throw new AppError('VALIDATION', 'Image content does not match its type', { reason: 'badImage' })
     const rel = `${folder}/${randomUUID()}.${EXT[m[1]!]}`
     const full = this.resolve(rel)
     mkdirSync(dirname(full), { recursive: true })
@@ -35,7 +35,7 @@ export class MediaService {
 
   resolve(rel: string): string {
     const full = normalize(join(this.root, rel))
-    if (!full.startsWith(resolve(this.root) + sep)) throw new AppError('VALIDATION', 'Invalid media path')
+    if (!full.startsWith(resolve(this.root) + sep)) throw new AppError('VALIDATION', 'Invalid media path', { reason: 'badImage' })
     return full
   }
 
