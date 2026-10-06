@@ -64,7 +64,7 @@ export function CartLines({ priced }: { priced: PricingResult }) {
                     <Minus className="size-4" />
                   </button>
                   <span className="w-9 text-center text-sm font-extrabold tabular">{fmtNumber(l.qty)}</span>
-                  <button className="flex size-8 items-center justify-center rounded-lg bg-sunken hover:bg-line disabled:opacity-40" disabled={l.trackSerials} onClick={() => setQty(l.key, l.qty + 1)} aria-label="+">
+                  <button className="flex size-8 items-center justify-center rounded-lg bg-sunken hover:bg-line disabled:opacity-40" disabled={!!l.serial} onClick={() => setQty(l.key, l.qty + 1)} aria-label="+">
                     <Plus className="size-4" />
                   </button>
                 </div>
@@ -97,7 +97,11 @@ function LineEditor({ line, onClose }: { line: CartLine; onClose: () => void }) 
   const openPrice = line.listPrice === 0 || line.type === 'CUSTOM'
   const save = () => {
     const discount: Discount | null = dValue > 0 ? (dType === 'PERCENT' ? { type: 'PERCENT', bp: dValue } : { type: 'AMOUNT', amount: dValue }) : null
-    update(line.key, { qty: line.trackSerials ? 1 : Math.max(1, qty), unitPrice: price, discount: line.offerId ? line.discount : discount, serial: serial || null })
+    const chosen = serial.trim() || null
+    const count = Math.max(1, qty)
+    update(line.key, { qty: chosen ? 1 : count, unitPrice: price, discount: line.offerId ? line.discount : discount, serial: chosen })
+    // An IMEI picked on a line of several phones: the others stay on their own line.
+    if (chosen && count > 1) useCart.setState((s) => ({ lines: [...s.lines, { ...line, key: crypto.randomUUID(), qty: count - 1, serial: null }] }))
     onClose()
   }
   return (
@@ -122,24 +126,26 @@ function LineEditor({ line, onClose }: { line: CartLine; onClose: () => void }) 
       }
     >
       <div className="space-y-3">
-        {!line.trackSerials ? (
+        {line.trackSerials ? (
+          <Field label={t('pos.selectSerial')} hint={serials.length === 0 ? t('pos.noSerialsHint') : undefined}>
+            {serials.length > 0 ? (
+              <Select value={serials.some((s) => s.serial === serial) ? serial : ''} onChange={(e) => setSerial(e.target.value)} dir="ltr" className="mb-2">
+                <option value="">{t('pos.withoutSerial')}</option>
+                {serials.map((s) => (
+                  <option key={s.serial} value={s.serial}>
+                    {s.serial}
+                  </option>
+                ))}
+              </Select>
+            ) : null}
+            <Input dir="ltr" className="font-mono" placeholder={t('pos.typeSerial')} value={serial} onChange={(e) => setSerial(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} />
+          </Field>
+        ) : null}
+        {!line.trackSerials || !serial.trim() ? (
           <Field label={t('common.qty')}>
-            <NumberInput autoFocus value={qty} min={1} onChange={(v) => setQty(v ?? 1)} onKeyDown={(e) => e.key === 'Enter' && save()} className="h-11 text-lg font-bold" />
+            <NumberInput autoFocus={!line.trackSerials} value={qty} min={1} onChange={(v) => setQty(v ?? 1)} onKeyDown={(e) => e.key === 'Enter' && save()} className="h-11 text-lg font-bold" />
           </Field>
-        ) : (
-          <Field label={t('pos.selectSerial')}>
-            {serials.length === 0 && !line.serial ? <p className="text-sm text-danger">{t('pos.noSerials')}</p> : null}
-            <Select value={serial} onChange={(e) => setSerial(e.target.value)} dir="ltr">
-              <option value="">—</option>
-              {line.serial && !serials.some((s) => s.serial === line.serial) ? <option value={line.serial}>{line.serial}</option> : null}
-              {serials.map((s) => (
-                <option key={s.serial} value={s.serial}>
-                  {s.serial}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        )}
+        ) : null}
         <Field label={t('pos.unitPrice')} hint={!openPrice && !can('edit_price') ? t('permissions.edit_price') : undefined}>
           <MoneyInput value={price} onChange={(v) => setPrice(v ?? 0)} onEnter={save} />
         </Field>

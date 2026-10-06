@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ArrowLeft, Barcode, ChevronDown, Cpu, Layers, Package, Plus, Save, Smartphone, Sparkles, Trash2, Wrench, Boxes, Recycle } from 'lucide-react'
+import { ArrowLeft, Barcode, ChevronDown, Cpu, Layers, Package, PencilLine, Plus, Save, Smartphone, Sparkles, Trash2, Truck, Wrench, Boxes, Recycle } from 'lucide-react'
 import { PRODUCT_TYPES, type ProductType } from '@shared/constants/enums'
 import { applyBp, bpToPercentString, ratioBp } from '@shared/money'
-import type { ProductDto } from '@shared/types/catalog'
+import type { ProductDto, VariantListItem } from '@shared/types/catalog'
 import type { ProductSaveInput } from '@shared/schemas/catalog'
 import { call } from '../../lib/api'
 import { invalidate, toastError, useApi } from '../../lib/query'
@@ -15,9 +15,10 @@ import { useApp, useCan } from '../../stores/app'
 import { useConfirm } from '../../components/confirm'
 import { Button } from '../../components/ui/button'
 import { Field, Input, MoneyInput, NumberInput, Select, Textarea } from '../../components/ui/input'
-import { Badge, Card, CardHeader, SwitchRow } from '../../components/ui/misc'
+import { Badge, Card, CardHeader, Segmented, SwitchRow } from '../../components/ui/misc'
 import { PageLoader } from '../../components/ui/spinner'
 import { MovementsTab } from './movements-tab'
+import { AdjustStockDialog } from './adjust-dialog'
 
 interface VariantForm {
   id?: string
@@ -165,6 +166,15 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
     init?.variants ?? [{ ...emptyVariant(), barcodes: searchParams.get('barcode') ? [searchParams.get('barcode')!] : [] }]
   )
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [adjustItem, setAdjustItem] = useState<VariantListItem | null>(null)
+  // Saved products: the quantity changes through a stock adjustment (kept in the stock history).
+  const editStock = can('modify_stock') ? (variantId: string) => void call('catalog.variant', { id: variantId }).then(setAdjustItem, toastError) : undefined
+  const addDevices = initial && product.trackSerials && can('manage_purchases') ? () => navigate('/suppliers/purchases/new') : undefined
+  // Refresh quantities after an adjustment without losing other edits on the page.
+  useEffect(() => {
+    if (!initial) return
+    setVariants((vs) => vs.map((v) => ({ ...v, stockQty: initial.variants.find((x) => x.id === v.id)?.stockQty ?? v.stockQty })))
+  }, [initial])
   const [saving, setSaving] = useState(false)
   const [historyVariant, setHistoryVariant] = useState(init?.variants[0]?.id ?? '')
   const categories = useApi('catalog.categories')
@@ -424,6 +434,9 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                     onChange={(patch) => updateVariant(variants.indexOf(first), patch)}
                     onGenerate={() => generateBarcode(variants.indexOf(first))}
                     isDevice={isDevice}
+                    onTrackSerials={(v) => setProduct({ ...product, trackSerials: v })}
+                    onEditStock={editStock}
+                    onAddDevices={addDevices}
                   />
                 ) : null}
                 {multi ? (
@@ -433,6 +446,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
                     showStock={showStock}
                     trackSerials={product.trackSerials}
                     onChange={updateVariant}
+                    onEditStock={editStock}
                     onGenerate={generateBarcode}
                     onRemove={(i) => (variants[i]!.id ? updateVariant(i, { remove: true }) : setVariants(variants.filter((_, k) => k !== i)))}
                     onAdd={() => setVariants([...variants, { ...emptyVariant(), sellPrice: first?.sellPrice ?? 0, costPrice: first?.costPrice ?? 0 }])}
@@ -566,6 +580,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
           </div>
         ) : null}
       </div>
+      {adjustItem ? <AdjustStockDialog key={adjustItem.variantId} open onOpenChange={(o) => !o && setAdjustItem(null)} initial={adjustItem} /> : null}
     </div>
   )
 }
@@ -622,7 +637,10 @@ function SingleStockFields({
   trackSerials,
   onChange,
   onGenerate,
-  isDevice
+  isDevice,
+  onTrackSerials,
+  onEditStock,
+  onAddDevices
 }: {
   v: VariantForm
   isNew: boolean
@@ -631,22 +649,52 @@ function SingleStockFields({
   onChange: (p: Partial<VariantForm>) => void
   onGenerate: () => void
   isDevice: boolean
+  onTrackSerials: (v: boolean) => void
+  onEditStock?: (variantId: string) => void
+  onAddDevices?: () => void
 }) {
   const { t } = useTranslation()
   const serialCount = v.serialsText.split(/\r?\n/).filter((s) => s.trim()).length
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      {showStock && isNew && isDevice ? (
+        <Field label={t('inventory.countBy')} className="sm:col-span-2">
+          <Segmented
+            value={trackSerials ? 'imei' : 'qty'}
+            onChange={(m) => onTrackSerials(m === 'imei')}
+            options={[
+              { value: 'imei', label: t('inventory.byImei') },
+              { value: 'qty', label: t('inventory.byQty') }
+            ]}
+          />
+        </Field>
+      ) : null}
       {showStock ? (
         <>
           {isNew && !trackSerials ? (
             <Field label={t('inventory.openingStock')}>
               <NumberInput value={v.openingStock} onChange={(n) => onChange({ openingStock: n ?? 0 })} className="h-11 text-base font-bold" />
             </Field>
-          ) : !isNew ? (
-            <Field label={t('inventory.stockQty')}>
-              <div className="flex h-11 items-center rounded-xl bg-sunken px-3 text-base font-bold tabular">{fmtNumber(v.stockQty)}</div>
+          ) : isNew && trackSerials ? (
+            <Field label={t('inventory.openingStock')}>
+              <div className="flex h-11 items-center rounded-xl bg-sunken px-3 text-base font-bold tabular">{fmtNumber(serialCount)}</div>
             </Field>
-          ) : null}
+          ) : (
+            <Field label={t('inventory.stockQty')} hint={!onEditStock && onAddDevices ? t('inventory.serialStockHint') : undefined}>
+              <div className="flex gap-2">
+                <div className="flex h-11 flex-1 items-center rounded-xl bg-sunken px-3 text-base font-bold tabular">{fmtNumber(v.stockQty)}</div>
+                {onEditStock && v.id ? (
+                  <Button variant="outline" className="h-11" onClick={() => onEditStock(v.id!)}>
+                    <PencilLine /> {t('inventory.editQty')}
+                  </Button>
+                ) : onAddDevices ? (
+                  <Button variant="outline" className="h-11" onClick={onAddDevices}>
+                    <Truck /> {t('inventory.addDevices')}
+                  </Button>
+                ) : null}
+              </div>
+            </Field>
+          )}
           <Field label={t('inventory.minStock')}>
             <NumberInput allowEmpty value={v.minStock} onChange={(n) => onChange({ minStock: n })} placeholder="2" />
           </Field>
@@ -670,6 +718,7 @@ function VariantsTable({
   showStock,
   trackSerials,
   onChange,
+  onEditStock,
   onGenerate,
   onRemove,
   onAdd
@@ -679,6 +728,7 @@ function VariantsTable({
   showStock: boolean
   trackSerials: boolean
   onChange: (i: number, p: Partial<VariantForm>) => void
+  onEditStock?: (variantId: string) => void
   onGenerate: (i: number) => void
   onRemove: (i: number) => void
   onAdd: () => void
@@ -706,7 +756,14 @@ function VariantsTable({
               {showStock ? (
                 <Field label={v.id ? t('inventory.stockQty') : t('inventory.openingStock')}>
                   {v.id ? (
-                    <div className="flex h-10 items-center rounded-xl bg-sunken px-3 font-bold tabular">{fmtNumber(v.stockQty)}</div>
+                    <div className="flex h-10 items-center gap-1 rounded-xl bg-sunken ps-3 font-bold tabular">
+                      <span className="flex-1">{fmtNumber(v.stockQty)}</span>
+                      {onEditStock ? (
+                        <Button variant="ghost" size="icon-sm" title={t('inventory.editQty')} onClick={() => onEditStock(v.id!)}>
+                          <PencilLine />
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : trackSerials ? (
                     <div className="flex h-10 items-center rounded-xl bg-sunken px-3 font-bold tabular">{v.serialsText.split(/\n/).filter((s) => s.trim()).length}</div>
                   ) : (

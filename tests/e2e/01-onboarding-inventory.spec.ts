@@ -15,7 +15,7 @@ test('first launch → owner login → create product → find it in inventory',
     await page.getByLabel('اسم الصنف').fill('جراب سيليكون A55')
     await page.getByLabel('سعر البيع').fill('150')
     await page.getByLabel('سعر التكلفة').fill('60')
-    await page.getByLabel('الكمية الافتتاحية').fill('12')
+    await page.getByLabel('الكمية اللي عندك دلوقتي').fill('12')
     await page.screenshot({ path: 'test-results/shots/product-editor.png' })
     await page.getByRole('button', { name: 'حفظ' }).click()
     await expect(page.getByText('تم حفظ الصنف')).toBeVisible()

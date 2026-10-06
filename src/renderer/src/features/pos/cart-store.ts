@@ -83,10 +83,10 @@ export const useCart = create<CartState>()(
       add: (item, opts = {}) =>
         set((s) => {
           const qty = opts.qty ?? 1
-          // Merge identical lines (same product, price, no serial/offer/discount).
+          // Merge identical lines (same product, price, no IMEI chosen, no offer/discount).
           const existing =
-            !item.trackSerials && !opts.offerId && !opts.discount
-              ? s.lines.find((l) => l.variantId === item.variantId && l.unitPrice === (opts.unitPrice ?? item.sellPrice) && !l.offerId && !l.discount)
+            !opts.serial && !opts.offerId && !opts.discount
+              ? s.lines.find((l) => l.variantId === item.variantId && l.unitPrice === (opts.unitPrice ?? item.sellPrice) && !l.serial && !l.offerId && !l.discount)
               : undefined
           if (existing) {
             return { lines: s.lines.map((l) => (l.key === existing.key ? { ...l, qty: l.qty + qty } : l)), selectedKey: existing.key }
@@ -140,7 +140,7 @@ export const useCart = create<CartState>()(
       update: (key, patch) => set((s) => ({ lines: s.lines.map((l) => (l.key === key ? { ...l, ...patch } : l)) })),
       setQty: (key, qty) =>
         set((s) => ({
-          lines: qty <= 0 ? s.lines.filter((l) => l.key !== key) : s.lines.map((l) => (l.key === key ? { ...l, qty: l.trackSerials ? 1 : Math.min(qty, 100000) } : l))
+          lines: qty <= 0 ? s.lines.filter((l) => l.key !== key) : s.lines.map((l) => (l.key === key ? { ...l, qty: l.serial ? 1 : Math.min(qty, 100000) } : l))
         })),
       remove: (key) => set((s) => ({ lines: s.lines.filter((l) => l.key !== key), selectedKey: s.selectedKey === key ? null : s.selectedKey })),
       select: (selectedKey) => set({ selectedKey }),

@@ -35,7 +35,7 @@ export async function createProduct(page: Page, name: string, price: string, sto
   await page.goto(page.url().replace(/#.*$/, '#/inventory/products/new'))
   await page.getByLabel('اسم الصنف').fill(name)
   await page.getByLabel('سعر البيع').fill(price)
-  await page.getByLabel('الكمية الافتتاحية').fill(stock)
+  await page.getByLabel('الكمية اللي عندك دلوقتي').fill(stock)
   if (barcode) {
     const input = page.getByPlaceholder('6221234567890')
     await input.fill(barcode)

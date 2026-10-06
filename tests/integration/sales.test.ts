@@ -192,7 +192,7 @@ describe('completing sales', () => {
     const v = await product('iPhone 13', 2000000, { type: 'DEVICE', serials: ['356789012345678', '356789012345679'] })
     expect(await stockOf(v)).toBe(2)
     await expect(t.app.sales.complete(sale([{ variantId: v, qty: 1, unitPrice: 2000000 }], [{ method: 'CASH', amount: 2000000 }]), actor(t))).rejects.toMatchObject({
-      code: 'VALIDATION'
+      code: 'SERIAL_REQUIRED' // every unit has an IMEI: the cashier must pick one (clear message)
     })
     const s = await t.app.sales.complete(sale([{ variantId: v, qty: 1, unitPrice: 2000000, serial: '356789012345678' }], [{ method: 'CASH', amount: 2000000 }]), actor(t))
     expect((await t.app.db.serialItem.findUniqueOrThrow({ where: { serial: '356789012345678' } })).status).toBe('SOLD')

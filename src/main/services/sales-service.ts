@@ -224,10 +224,15 @@ export class SalesService {
       for (const [i, p] of prepared.entries()) {
         const l = priced.lines[i]!
         let serial: string | null = null
+        // Units without a registered IMEI (stock entered by count, not by IMEI) can be sold
+        // without one, or with an IMEI typed at the counter that is recorded now.
+        let unregistered = 0
         if (p.trackSerials && p.variantId) {
           serial = p.input.serial?.trim() || null
-          if (!serial) throw new AppError('VALIDATION', 'Select the IMEI/serial of the unit sold', { name: p.name })
-          if (p.input.qty !== 1) throw new AppError('VALIDATION', 'One line per IMEI', { name: p.name })
+          const v = await tx.productVariant.findUniqueOrThrow({ where: { id: p.variantId }, select: { stockQty: true } })
+          unregistered = v.stockQty - (await tx.serialItem.count({ where: { variantId: p.variantId, status: 'IN_STOCK' } }))
+          if (serial && p.input.qty !== 1) throw new AppError('VALIDATION', 'One line per IMEI', { name: p.name })
+          if (!serial && unregistered < p.input.qty) throw new AppError('SERIAL_REQUIRED', 'Select the IMEI/serial of the unit sold', { name: p.name })
         }
         const item = await tx.saleItem.create({
           data: {
@@ -250,7 +255,11 @@ export class SalesService {
         })
         if (serial && p.variantId) {
           const s = await tx.serialItem.updateMany({ where: { serial, variantId: p.variantId, status: 'IN_STOCK' }, data: { status: 'SOLD', saleItemId: item.id } })
-          if (s.count === 0) throw new AppError('INSUFFICIENT_STOCK', 'IMEI not in stock', { name: `${p.name} (${serial})`, available: 0 })
+          if (s.count === 0) {
+            const known = await tx.serialItem.findUnique({ where: { serial } })
+            if (known || unregistered < 1) throw new AppError('INSUFFICIENT_STOCK', 'IMEI not in stock', { name: `${p.name} (${serial})`, available: 0 })
+            await tx.serialItem.create({ data: { variantId: p.variantId, serial, status: 'SOLD', costPrice: p.unitCost, saleItemId: item.id } })
+          }
         }
         if (p.variantId && p.trackStock) {
           await applyStockChange(tx, {
