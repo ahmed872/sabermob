@@ -15,6 +15,7 @@ import type { Actor } from './auth-service'
 import type { AuditService } from './audit-service'
 import { applyStockChange } from './inventory-service'
 import { ean13CheckDigit, nextNumber } from './numbering'
+import { MediaService } from './media-service'
 import type { SettingsService } from './settings-service'
 
 const SERIAL_TYPES = new Set(['DEVICE', 'USED_DEVICE'])
@@ -46,6 +47,7 @@ interface VariantRow {
   isActive: number
   warrantyDays: number | null
   lastSoldAt: string | Date | null
+  imagePath: string | null
 }
 
 const VARIANT_SELECT = `
@@ -57,7 +59,7 @@ const VARIANT_SELECT = `
          p.trackStock AS trackStock, p.trackSerials AS trackSerials, p.taxBp AS taxBp,
          p.categoryId AS categoryId, c.name AS categoryName, c.color AS categoryColor,
          br.name AS brandName, m.name AS modelName, p.isFavorite AS isFavorite, p.isActive AS isActive,
-         p.warrantyDays AS warrantyDays, v.lastSoldAt AS lastSoldAt
+         p.warrantyDays AS warrantyDays, v.lastSoldAt AS lastSoldAt, p.imagePath AS imagePath
   FROM ProductVariant v
   JOIN Product p ON p.id = v.productId
   LEFT JOIN Category c ON c.id = p.categoryId
@@ -93,7 +95,8 @@ function toListItem(r: VariantRow, canViewCost: boolean): VariantListItem {
     isFavorite: !!r.isFavorite,
     isActive: !!r.isActive,
     warrantyDays: r.warrantyDays,
-    lastSoldAt: lastSold ?? null
+    lastSoldAt: lastSold ?? null,
+    imageUrl: MediaService.url(r.imagePath)
   }
 }
 
@@ -106,7 +109,8 @@ export class CatalogService {
   constructor(
     private readonly db: Db,
     private readonly settings: SettingsService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    private readonly media: MediaService
   ) {}
 
   // ───────────── Brands / models / categories ─────────────
@@ -288,8 +292,7 @@ export class CatalogService {
       warrantyDays: input.warrantyDays ?? null,
       isFavorite: input.isFavorite ?? false,
       isActive: input.isActive ?? true,
-      notes: input.notes ?? null,
-      imagePath: input.imagePath ?? null
+      notes: input.notes ?? null
     }
   }
 
@@ -354,7 +357,8 @@ export class CatalogService {
   }
 
   async createProduct(input: ProductSaveInput, actor: Actor | null): Promise<ProductDto> {
-    const data = this.#normalizeProduct(input)
+    const imagePath = input.image ? this.media.saveDataUrl('products', input.image) : null
+    const data = { ...this.#normalizeProduct(input), imagePath }
     const productId = await this.db.$transaction(async (tx) => {
       const product = await tx.product.create({ data })
       const ids: string[] = []
@@ -369,15 +373,22 @@ export class CatalogService {
         tx
       )
       return product.id
+    }).catch((err: unknown) => {
+      this.media.remove(imagePath)
+      throw err
     })
     return this.getProduct(productId, true)
   }
 
   async updateProduct(input: ProductSaveInput & { id: string }, actor: Actor): Promise<ProductDto> {
-    const data = this.#normalizeProduct(input)
+    // image: absent = keep the current photo, null = remove it, data URL = replace it
+    const newImage = input.image ? this.media.saveDataUrl('products', input.image) : null
+    const data = input.image === undefined ? this.#normalizeProduct(input) : { ...this.#normalizeProduct(input), imagePath: newImage }
+    let oldImage: string | null = null
     await this.db.$transaction(async (tx) => {
       const existing = await tx.product.findUnique({ where: { id: input.id }, include: { variants: { where: { deletedAt: null }, include: { barcodes: true } } } })
       if (!existing || existing.deletedAt) throw new AppError('NOT_FOUND', 'Product not found')
+      if (input.image !== undefined && existing.imagePath !== newImage) oldImage = existing.imagePath
       // Switching IMEI tracking off with phones in stock is fine: they sell by quantity from now on
       // (registered IMEIs stay on record and count again if tracking is switched back on).
       await tx.product.update({ where: { id: input.id }, data })
@@ -424,7 +435,11 @@ export class CatalogService {
       if (!remaining.some((r) => r.isDefault)) await tx.productVariant.update({ where: { id: remaining[0]!.id }, data: { isDefault: true } })
       await this.#reindexVariants(tx, remaining.map((r) => r.id))
       await this.audit.log({ userId: actor.userId, action: 'product.updated', entity: 'Product', entityId: input.id, metadata: { name: data.name } }, tx)
+    }).catch((err: unknown) => {
+      this.media.remove(newImage)
+      throw err
     })
+    this.media.remove(oldImage)
     return this.getProduct(input.id, actor.permissions.has('view_cost'))
   }
 
@@ -476,6 +491,7 @@ export class CatalogService {
       isActive: p.isActive,
       notes: p.notes,
       imagePath: p.imagePath,
+      imageUrl: MediaService.url(p.imagePath),
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
       variants: p.variants.map((v) => ({

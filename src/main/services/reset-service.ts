@@ -71,12 +71,14 @@ export class ResetService {
       await tx.$executeRawUnsafe(`DELETE FROM "Counter" WHERE key <> 'barcode'`)
       await this.audit.log({ userId: actor.userId, action: 'data.reset', metadata: { ...before, clearCatalog: opts.clearCatalog } }, tx)
     })
-    this.#cleanMedia()
+    await this.#cleanMedia()
     return before
   }
 
   /** Photos and signatures of removed products and repairs. */
-  #cleanMedia(): void {
+  async #cleanMedia(): Promise<void> {
+    // product photos still used by the services that were kept
+    const kept = new Set((await rawQuery<{ p: string }>(this.db, `SELECT imagePath AS p FROM "Product" WHERE imagePath IS NOT NULL`)).map((r) => r.p))
     for (const dir of ['repairs', 'signatures', 'products']) {
       const full = join(this.mediaRoot, dir)
       let files: string[] = []
@@ -86,7 +88,7 @@ export class ResetService {
         continue
       }
       for (const f of files) {
-        if (dir === 'products') continue // kept services may use them; unreferenced files are harmless
+        if (dir === 'products' && kept.has(`products/${f}`)) continue
         try {
           rmSync(join(full, f), { recursive: true, force: true })
         } catch {

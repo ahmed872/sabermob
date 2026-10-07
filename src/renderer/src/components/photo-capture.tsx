@@ -7,7 +7,20 @@ import { Button } from './ui/button'
 import { Dialog } from './ui/dialog'
 
 /** Add photos from a file or a webcam (works fully offline). */
-export function PhotoCapture({ onPhoto }: { onPhoto: (dataUrl: string) => void }) {
+export function PhotoCapture({
+  onPhoto,
+  multiple = true,
+  maxSide = 1600,
+  addLabel,
+  takeLabel
+}: {
+  onPhoto: (dataUrl: string) => void
+  multiple?: boolean
+  /** longest side of the stored JPEG, in pixels */
+  maxSide?: number
+  addLabel?: string
+  takeLabel?: string
+}) {
   const { t } = useTranslation()
   const input = useRef<HTMLInputElement>(null)
   const [camera, setCamera] = useState(false)
@@ -17,12 +30,12 @@ export function PhotoCapture({ onPhoto }: { onPhoto: (dataUrl: string) => void }
         ref={input}
         type="file"
         accept="image/png,image/jpeg,image/webp"
-        multiple
+        multiple={multiple}
         className="hidden"
         onChange={async (e) => {
           for (const f of Array.from(e.target.files ?? [])) {
             try {
-              onPhoto(await fileToDataUrl(f))
+              onPhoto(await fileToDataUrl(f, maxSide))
             } catch {
               toast.error(t('errors.FILE_ERROR'))
             }
@@ -31,17 +44,17 @@ export function PhotoCapture({ onPhoto }: { onPhoto: (dataUrl: string) => void }
         }}
       />
       <Button variant="outline" size="sm" onClick={() => input.current?.click()}>
-        <ImagePlus /> {t('repairs.addPhoto')}
+        <ImagePlus /> {addLabel ?? t('repairs.addPhoto')}
       </Button>
       <Button variant="outline" size="sm" onClick={() => setCamera(true)}>
-        <Camera /> {t('repairs.takePhoto')}
+        <Camera /> {takeLabel ?? t('repairs.takePhoto')}
       </Button>
-      {camera ? <CameraDialog onClose={() => setCamera(false)} onCapture={onPhoto} /> : null}
+      {camera ? <CameraDialog onClose={() => setCamera(false)} onCapture={onPhoto} maxSide={maxSide} /> : null}
     </div>
   )
 }
 
-function CameraDialog({ onClose, onCapture }: { onClose: () => void; onCapture: (d: string) => void }) {
+function CameraDialog({ onClose, onCapture, maxSide }: { onClose: () => void; onCapture: (d: string) => void; maxSide: number }) {
   const { t } = useTranslation()
   const video = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState(false)
@@ -71,7 +84,7 @@ function CameraDialog({ onClose, onCapture }: { onClose: () => void; onCapture: 
           onClick={() => {
             const v = video.current
             if (!v || !v.videoWidth) return
-            onCapture(drawToJpeg(v, v.videoWidth, v.videoHeight))
+            onCapture(drawToJpeg(v, v.videoWidth, v.videoHeight, maxSide))
             onClose()
           }}
         >

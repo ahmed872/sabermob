@@ -113,7 +113,11 @@ function ProductsTab() {
       header: t('common.name'),
       cell: (r) => (
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.categoryColor ?? 'var(--line-strong)' }} />
+          {r.imageUrl ? (
+            <img src={r.imageUrl} alt="" loading="lazy" className="size-9 shrink-0 rounded-lg border border-line bg-white object-contain" />
+          ) : (
+            <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.categoryColor ?? 'var(--line-strong)' }} />
+          )}
           <div className="min-w-0">
             <p className="truncate font-semibold">{r.name}</p>
             <p className="truncate text-xs text-muted">{[t(`inventory.types.${r.type}`), r.categoryName, r.brandName, r.modelName].filter(Boolean).join(' · ')}</p>

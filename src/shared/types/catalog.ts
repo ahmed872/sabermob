@@ -55,6 +55,8 @@ export interface VariantListItem {
   isActive: boolean
   warrantyDays: number | null
   lastSoldAt: string | null
+  /** app://media/... photo, null when none */
+  imageUrl: string | null
 }
 
 export interface Paged<T> {
@@ -102,6 +104,7 @@ export interface ProductDto {
   isActive: boolean
   notes: string | null
   imagePath: string | null
+  imageUrl: string | null
   createdAt: string
   updatedAt: string
   variants: VariantDto[]

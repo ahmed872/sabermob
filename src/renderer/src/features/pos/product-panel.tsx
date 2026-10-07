@@ -126,7 +126,10 @@ function ProductTile({ item, onClick }: { item: VariantListItem; onClick: () => 
       )}
     >
       <span className="absolute inset-y-0 start-0 w-1" style={{ background: item.categoryColor ?? 'transparent' }} />
-      <span className="line-clamp-2 text-[13px] font-bold leading-snug">{item.name}</span>
+      <span className="flex min-w-0 items-start gap-2">
+        <span className="line-clamp-2 flex-1 text-[13px] font-bold leading-snug">{item.name}</span>
+        {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" className="size-11 shrink-0 rounded-lg border border-line bg-white object-contain" /> : null}
+      </span>
       <span className="flex items-end justify-between gap-1">
         <span className="text-[15px] font-extrabold text-primary tabular">{item.sellPrice === 0 ? t('pos.openPrice') : fmtMoney(item.sellPrice)}</span>
         {item.trackStock ? (

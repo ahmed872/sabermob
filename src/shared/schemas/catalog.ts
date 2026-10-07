@@ -66,7 +66,8 @@ export const productSaveSchema = z.object({
   isFavorite: z.boolean().default(false),
   isActive: z.boolean().default(true),
   notes: optLongText,
-  imagePath: z.string().max(300).nullish(),
+  /** Optional photo: a data URL sets/replaces it, null removes it, absent keeps it. */
+  image: z.string().max(9_000_000).startsWith('data:image/').nullable().optional(),
   variants: z.array(variantInputSchema).min(1).max(200)
 })
 export type ProductSaveInput = z.input<typeof productSaveSchema>

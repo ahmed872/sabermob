@@ -109,7 +109,8 @@ export class AppContext {
     this.auth = new AuthService(this.db, this.settings, this.audit, this.log, this.now)
     this.license = new LicenseService(this.db, o.licensePlatform, this.audit, this.log, this.now, o.publicKeyPem ?? LICENSE_PUBLIC_KEY_PEM)
     this.users = new UserService(this.db, this.audit, () => this.license.maxUsers())
-    this.catalog = new CatalogService(this.db, this.settings, this.audit)
+    this.media = new MediaService(this.paths.media)
+    this.catalog = new CatalogService(this.db, this.settings, this.audit, this.media)
     this.inventory = new InventoryService(this.db, this.settings, this.audit)
     this.bootstrap = new BootstrapService(this.db, this.settings, this.audit, this.deviceId, () => this.catalog)
     this.shifts = new ShiftService(this.db, this.audit)
@@ -118,7 +119,6 @@ export class AppContext {
     this.suppliers = new SupplierService(this.db, this.audit, this.shifts)
     this.secrets = new SecretsService(this.settings)
     await this.secrets.init()
-    this.media = new MediaService(this.paths.media)
     this.qr = new QrService(this.db, this.settings, this.secrets)
     this.offers = new OfferService(this.db, this.settings, this.audit, this.now)
     this.sales.offers = this.offers

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ArrowLeft, Barcode, ChevronDown, Cpu, Layers, Package, PencilLine, Plus, Save, Smartphone, Sparkles, Trash2, Truck, Wrench, Boxes, Recycle } from 'lucide-react'
+import { ArrowLeft, Barcode, ChevronDown, Cpu, Image as ImageIcon, Layers, Package, PencilLine, Plus, Save, Smartphone, Sparkles, Trash2, Truck, Wrench, Boxes, Recycle } from 'lucide-react'
 import { PRODUCT_TYPES, type ProductType } from '@shared/constants/enums'
 import { applyBp, bpToPercentString, ratioBp } from '@shared/money'
 import type { ProductDto, VariantListItem } from '@shared/types/catalog'
@@ -19,6 +19,7 @@ import { Badge, Card, CardHeader, Segmented, SwitchRow } from '../../components/
 import { PageLoader } from '../../components/ui/spinner'
 import { MovementsTab } from './movements-tab'
 import { AdjustStockDialog } from './adjust-dialog'
+import { PhotoCapture } from '../../components/photo-capture'
 
 interface VariantForm {
   id?: string
@@ -176,6 +177,9 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
     setVariants((vs) => vs.map((v) => ({ ...v, stockQty: initial.variants.find((x) => x.id === v.id)?.stockQty ?? v.stockQty })))
   }, [initial])
   const [saving, setSaving] = useState(false)
+  // photo: shown URL + pending change (undefined = unchanged, null = remove, data URL = new)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(initial?.imageUrl ?? null)
+  const [photoChange, setPhotoChange] = useState<string | null | undefined>(undefined)
   const [historyVariant, setHistoryVariant] = useState(init?.variants[0]?.id ?? '')
   const categories = useApi('catalog.categories')
   const brands = useApi('catalog.brands')
@@ -235,6 +239,7 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
         isFavorite: product.isFavorite,
         isActive: product.isActive,
         notes: product.notes || null,
+        image: photoChange,
         variants: variants
           .filter((v) => v.id || !v.remove)
           .map((v) => ({
@@ -266,6 +271,8 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
         const next = fromDto(saved)
         setProduct(next.product)
         setVariants(next.variants)
+        setPhotoUrl(saved.imageUrl)
+        setPhotoChange(undefined)
       }
     } catch (err) {
       toastError(err)
@@ -526,6 +533,13 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
           </div>
 
           <div className="space-y-4">
+            <ProductPhoto
+              url={photoUrl}
+              onChange={(dataUrl) => {
+                setPhotoUrl(dataUrl)
+                setPhotoChange(dataUrl)
+              }}
+            />
             <Card>
               <SwitchRow label={t('inventory.favorite')} checked={product.isFavorite} onCheckedChange={(v) => setProduct({ ...product, isFavorite: v })} />
               <SwitchRow label={t('inventory.active')} checked={product.isActive} onCheckedChange={(v) => setProduct({ ...product, isActive: v })} />
@@ -582,6 +596,32 @@ function ProductEditor({ initial }: { initial: ProductDto | null }) {
       </div>
       {adjustItem ? <AdjustStockDialog key={adjustItem.variantId} open onOpenChange={(o) => !o && setAdjustItem(null)} initial={adjustItem} /> : null}
     </div>
+  )
+}
+
+/** Optional product photo (stored small: it only needs to be recognisable on a POS tile). */
+function ProductPhoto({ url, onChange }: { url: string | null; onChange: (dataUrl: string | null) => void }) {
+  const { t } = useTranslation()
+  return (
+    <Card>
+      <CardHeader title={t('inventory.photo')} icon={ImageIcon} />
+      {url ? (
+        <img src={url} alt="" data-testid="product-photo" className="mb-3 aspect-[4/3] w-full rounded-xl border border-line bg-white object-contain" />
+      ) : (
+        <div className="mb-3 flex aspect-[2/1] w-full items-center justify-center rounded-xl border-2 border-dashed border-line text-muted">
+          <ImageIcon className="size-10 opacity-40" />
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <PhotoCapture multiple={false} maxSide={800} onPhoto={onChange} addLabel={url ? t('inventory.photoChange') : t('inventory.photoAdd')} takeLabel={t('inventory.photoTake')} />
+        {url ? (
+          <Button variant="ghost" size="sm" onClick={() => onChange(null)}>
+            <Trash2 /> {t('inventory.photoRemove')}
+          </Button>
+        ) : null}
+      </div>
+      <p className="mt-2 text-xs text-muted">{t('inventory.photoHint')}</p>
+    </Card>
   )
 }
 
