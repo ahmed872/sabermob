@@ -38,7 +38,7 @@ test('product photo: optional, saved, shown on the POS tile', async () => {
     const tile = page.getByRole('button', { name: /جراب أزرق/ }).first()
     await expect(tile.locator('img')).toBeVisible()
     // the picture really loads from the media folder
-    expect(await tile.locator('img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true)
+    expect(await tile.locator('img').evaluate((el) => { const img = el as unknown as { complete: boolean; naturalWidth: number }; return img.complete && img.naturalWidth > 0 })).toBe(true)
     await page.screenshot({ path: 'test-results/shots/product-photo-pos.png' })
   } finally {
     await app.close()
