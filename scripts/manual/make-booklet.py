@@ -7,7 +7,11 @@ in docs/manual/img. Then `npm run docs:booklet` renders the PDF.
 Screenshots: CENTRAL_MANUAL_SHOTS=1 xvfb-run -a npx playwright test tests/e2e/11-manual-shots.spec.ts
 (then resize test-results/manual/*.jpg into docs/manual/img).
 """
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from screens_guide import SCREENS  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = '1.0.9'
@@ -25,6 +29,13 @@ style = (ROOT / 'docs/manual/booklet-style.html.part').read_text(encoding='utf-8
   .part p { color: var(--muted); font-size: 12pt; }
   .toc .grp { margin-top: 10px; font-weight: 800; color: var(--brand); font-size: 12pt; border: 0; }
   .toc li { padding: 4px 0; font-size: 11pt; }
+  .scr { break-before: page; }
+  .scr .open { color: var(--muted); font-size: 10.5pt; margin: -4px 0 8px; }
+  .scr .qh .badge { background: #0f766e; font-size: 11pt; }
+  .scr table td:first-child { font-weight: 700; }
+  .scr table { break-inside: auto; }
+  .scr tr { break-inside: avoid; }
+  .scr figcaption:empty { display: none; }
 </style>''')
 
 parts: list[tuple[str, str]] = []
@@ -327,12 +338,28 @@ for pi, (title, sub) in enumerate(parts):
         toc.append(f'<li><span class="n">{n}</span><a href="#q{n}">{question}</a></li>')
         body.append(f'<section class="q" id="q{n}"><div class="qh"><div class="badge">{n}</div><h2><span class="s">س:</span> {question}</h2></div><div class="ans">{html}</div></section>')
 
+# ── the screen-by-screen guide: every screen, every button
+guide_toc, guide_body, m, last_group = [], [], 0, None
+guide_body.append('<section class="part"><div class="n">دليل</div><h1>كل شاشة وكل زرار</h1><p>كل شاشات البرنامج بالترتيب، وتحت كل صورة جدول: الزرار أو الخانة زي ما هي مكتوبة على الشاشة، وبتعمل إيه بالظبط.</p></section>')
+for group, title, opener, imgs, intro, rows in SCREENS:
+    m += 1
+    if group != last_group:
+        guide_toc.append(f'<li class="grp">{group}</li>')
+        last_group = group
+    guide_toc.append(f'<li><span class="n">ش{m}</span><a href="#s{m}">{title}</a></li>')
+    pics = [fig(i, '') for i in imgs]
+    shots = pics[0] if len(pics) == 1 else ''.join(grid(*pics[k:k + 2]) for k in range(0, len(pics), 2))
+    rows_html = table(('الزرار / الخانة', 'بيعمل إيه بالظبط'), rows, '38%')
+    guide_body.append(
+        f'<section class="scr" id="s{m}"><div class="qh"><div class="badge">ش{m}</div><h2>{title}</h2></div>'
+        f'<p class="open">بتفتحها من: {path(opener)}</p>' + (f'<p>{intro}</p>' if intro else '') + shots + rows_html + '</section>')
+
 page = f'''<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>سنترال برو: سؤال وجواب</title>
+<title>سنترال برو: سؤال وجواب ودليل الشاشات</title>
 <link rel="stylesheet" href="../../node_modules/@fontsource/cairo/400.css">
 <link rel="stylesheet" href="../../node_modules/@fontsource/cairo/600.css">
 <link rel="stylesheet" href="../../node_modules/@fontsource/cairo/700.css">
@@ -344,18 +371,23 @@ page = f'''<!doctype html>
 <section class="cover">
   <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
   <h1>سنترال برو</h1>
-  <div class="sub">كتيب الاستخدام: سؤال وجواب</div>
-  <div class="tag">«البرنامج بيساعدني في إيه، وإزاي؟» — {n} سؤال بالصور</div>
+  <div class="sub">كتيب الاستخدام: سؤال وجواب + دليل كل شاشة</div>
+  <div class="tag">«البرنامج بيساعدني في إيه، وإزاي؟» — {n} سؤال بالصور، ودليل لـ {m} شاشة بكل زراير البرنامج</div>
   <div class="meta">الإصدار {VERSION} · كل الصور من البرنامج نفسه</div>
 </section>
 <section class="chapter toc">
-  <h2>الأسئلة</h2>
+  <h2>المحتويات: الأسئلة</h2>
   <ol>{''.join(toc)}</ol>
 </section>
+<section class="chapter toc">
+  <h2>المحتويات: دليل الشاشات والأزرار</h2>
+  <ol>{''.join(guide_toc)}</ol>
+</section>
 {''.join(body)}
+{''.join(guide_body)}
 </main>
 </body>
 </html>
 '''
 (ROOT / 'docs/manual/booklet.html').write_text(page, encoding='utf-8')
-print(f'docs/manual/booklet.html: {len(parts)} parts, {n} questions')
+print(f'docs/manual/booklet.html: {len(parts)} parts, {n} questions, {m} screens')

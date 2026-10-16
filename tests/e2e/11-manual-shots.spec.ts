@@ -168,7 +168,7 @@ test('capture screenshots for the user booklet', async () => {
       await btn(page, 'استيراد').click()
     })
     await page.keyboard.press('Escape')
-    await step('27-movements', async () => go('/inventory/movements'))
+    await step('27-movements', async () => go('/inventory/stock'))
 
     // ── repairs ──
     await step('28-repairs', async () => {
@@ -305,6 +305,117 @@ test('capture screenshots for the user booklet', async () => {
     for (const d of OWNER.pin) await page.getByRole('button', { name: d, exact: true }).click()
     await page.getByRole('button', { name: 'submit' }).click()
     await expect(page.getByRole('link', { name: 'الإعدادات' })).toBeVisible()
+    // ── screen-by-screen guide (every screen and dialog) ──
+    await step('80-inventory-stock', async () => go('/inventory/stock'))
+    await step('81-inventory-setup', async () => go('/inventory/setup'))
+    for (const [n, tab] of [['82-reports-repairs', 'repairs'], ['83-reports-suppliers', 'suppliers'], ['84-reports-employees', 'employees']] as const) {
+      await step(n, async () => go(`/reports/${tab}`))
+    }
+    for (const [n, sec] of [
+      ['85-settings-taxes', 'taxes'],
+      ['86-settings-invoices', 'invoices'],
+      ['87-settings-security', 'security'],
+      ['88-settings-inventory', 'inventory'],
+      ['89-settings-repairs', 'repairs'],
+      ['90-settings-offers', 'offers'],
+      ['91-settings-loyalty', 'loyalty'],
+      ['92-settings-devices', 'devices']
+    ] as const) {
+      await step(n, async () => go(`/settings/${sec}`))
+    }
+    await step('93-pos-line-edit', async () => {
+      await go('/pos')
+      await search.fill('6221000000017')
+      await search.press('Enter')
+      await page.getByTestId('cart-total').waitFor()
+      await page.getByRole('button', { name: /جراب سيليكون iPhone/ }).last().click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('94-pos-discount', async () => {
+      await page.keyboard.press('F6')
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('95-pos-held', async () => {
+      await page.keyboard.press('F9')
+      await page.waitForTimeout(500)
+      await btn(page, 'الفواتير المعلقة').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('96-shift-cash', async () => {
+      await btn(page, /وردية مفتوحة/).click()
+      await page.getByRole('dialog').getByRole('button', { name: 'حركة الدرج' }).click()
+    })
+    await step('97-shift-close', async () => {
+      await page.getByRole('dialog').getByRole('button', { name: 'قفل الوردية' }).first().click()
+    })
+    await page.keyboard.press('Escape')
+    await step('98-sale-void', async () => {
+      await go('/sales/history')
+      await page.getByRole('cell', { name: 'S-000003' }).click()
+      await btn(page, 'إلغاء العملية').click()
+      await expect(page.getByText('سبب الإلغاء')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Escape')
+    await step('99-customer-form', async () => {
+      await go('/customers')
+      await btn(page, 'عميل جديد').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('100-customer-adjust', async () => {
+      await go(`/customers/${customer.id}`)
+      await btn(page, 'تسوية الرصيد').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('101-supplier-form', async () => {
+      await go('/suppliers')
+      await btn(page, 'مورد جديد').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('102-supplier-return', async () => {
+      await go(`/suppliers/${supplier.id}`)
+      await btn(page, 'مرتجع للمورد').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('103-repair-part', async () => {
+      await go(`/repairs/${repair.id}`)
+      await btn(page, 'إضافة قطعة').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('104-repair-payment', async () => {
+      await btn(page, 'إضافة دفعة').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('105-repair-cancel', async () => {
+      await btn(page, 'إلغاء الصيانة').click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('106-user-menu', async () => {
+      await go('/dashboard')
+      await page.getByText(OWNER.name).first().click()
+      await expect(page.getByRole('menuitem', { name: 'حسابي' })).toBeVisible()
+    })
+    await step('107-account', async () => {
+      await page.getByRole('menuitem', { name: 'حسابي' }).click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+    await page.keyboard.press('Escape')
+    await step('108-restore', async () => {
+      await go('/settings/backup')
+      await btn(page, 'استرجاع من ملف…').click()
+      await page.waitForTimeout(400)
+    })
+    await page.keyboard.press('Escape')
     await step('58-lock', async () => {
       await page.getByRole('button', { name: 'قفل' }).last().click()
       await expect(page.getByText('أدخل الرقم السري')).toBeVisible()
